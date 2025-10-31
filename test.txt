@@ -1,2 +1,14 @@
 #hello world
 %% Hello world
+
+# Final goal (top-down): Create a protein map based on properties/location in the human body (P682 "biological process" in wikidata). 
+# --> Make a KNN sudoku-like matrix in which each 9 square square represents a location in the human body.
+# distance from origin depends on frquency of mentions of a certain 
+
+#neuro #brain
+#cardio #heart
+#immune 
+#digestive 
+#
+
+
