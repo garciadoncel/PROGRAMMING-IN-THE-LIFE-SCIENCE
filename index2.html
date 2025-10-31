@@ -2,27 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Wikidata UniProt IDs</title>
+  <title>Wikidata UniProt & Biological Processes</title>
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #999; padding: 5px; text-align: left; }
+    th { background-color: #eee; }
+  </style>
 </head>
 <body>
-  <h1>Wikidata – UniProt ID mappings for Homo sapiens</h1>
-  <button id="fetchBtn">Run Proteins and their ID</button>
-  <pre id="output"></pre>
+  <h1>Human Proteins and Biological Processes</h1>
+  <button id="fetchBtn">Run Query</button>
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Protein Label</th>
+        <th>UniProt ID</th>
+        <th>Biological Process</th>
+        <th>Biological Process Label</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
   <script>
     const endpoint = "https://query.wikidata.org/sparql";
 
-    // Your custom SPARQL query
     const query = `
-      SELECT ?item ?itemLabel ?uniprotid ?tax_node
-      WHERE {
-        ?item wdt:P352 ?uniprotid ;
-              wdt:P703 wd:Q15978631 .
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
+      SELECT ?item ?uniprotid ?tax_node ?biological_process ?biological_processLabel ?itemLabel WHERE {
+        ?item wdt:P352 ?uniprotid;
+              wdt:P703 wd:Q15978631.
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        OPTIONAL { ?item wdt:P682 ?biological_process. }
+        ?item wdt:P31 wd:Q8054.
       }
       LIMIT 1000
     `;
-    <!-- change limit if you want to see more proteins -->
 
     async function fetchData() {
       const url = endpoint + "?query=" + encodeURIComponent(query);
@@ -33,16 +47,22 @@
       const data = await response.json();
       const results = data.results.bindings;
 
-      // Format results as a readable table
-      let output = "Label\tUniProt ID\n----------------------\n";
-      results.forEach(row => {
-        output += `${row.itemLabel.value}\t${row.uniprotid.value}\n`;
-      });
+      const tbody = document.querySelector("#resultsTable tbody");
+      tbody.innerHTML = ""; // clear previous results
 
-      document.getElementById('output').textContent = output;
+      results.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
+          <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
+          <td>${row.biological_process ? row.biological_process.value : ""}</td>
+          <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
     }
 
-    document.getElementById('fetchBtn').addEventListener('click', fetchData);
+    document.getElementById("fetchBtn").addEventListener("click", fetchData);
   </script>
 </body>
 </html>
