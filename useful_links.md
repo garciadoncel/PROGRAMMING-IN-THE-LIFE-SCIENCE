@@ -1,0 +1,13 @@
+#useful links:
+[70609205 ](https://observablehq.com/@d3/scatterplot-tour) #d3 scatterplot example
+**bold text test**
+*italics*
+# Header
+
+
+
+
+
+
+
+
