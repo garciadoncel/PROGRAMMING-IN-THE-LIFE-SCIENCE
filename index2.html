@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Wikidata UniProt IDs</title>
+</head>
+<body>
+  <h1>Wikidata – UniProt ID mappings for Homo sapiens</h1>
+  <button id="fetchBtn">Run Proteins and their ID</button>
+  <pre id="output"></pre>
+
+  <script>
+    const endpoint = "https://query.wikidata.org/sparql";
+
+    // Your custom SPARQL query
+    const query = `
+      SELECT ?item ?itemLabel ?uniprotid ?tax_node
+      WHERE {
+        ?item wdt:P352 ?uniprotid ;
+              wdt:P703 wd:Q15978631 .
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en" }
+      }
+      LIMIT 1000
+    `;
+    <!-- change limit if you want to see more proteins -->
+
+    async function fetchData() {
+      const url = endpoint + "?query=" + encodeURIComponent(query);
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/sparql-results+json' }
+      });
+
+      const data = await response.json();
+      const results = data.results.bindings;
+
+      // Format results as a readable table
+      let output = "Label\tUniProt ID\n----------------------\n";
+      results.forEach(row => {
+        output += `${row.itemLabel.value}\t${row.uniprotid.value}\n`;
+      });
+
+      document.getElementById('output').textContent = output;
+    }
+
+    document.getElementById('fetchBtn').addEventListener('click', fetchData);
+  </script>
+</body>
+</html>
