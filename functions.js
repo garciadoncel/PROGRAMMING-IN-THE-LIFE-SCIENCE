@@ -16,9 +16,31 @@ const main_query = `
   LIMIT 10000
 `;
 
+// Create Query that finds all proteins that have a biological process with anatomical location "heart"
+const_heart_query = `
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q1072.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000 
+`;
 
-
-
+// Create Query that finds all proteins that have a biological process with anatomical location "brain"
+const_brain_query = `
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q1073.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
 
 // Function to fetch data from Wikidata and populate the table
 async function fetchData(query, isSearch = false, proteinName = "") {
