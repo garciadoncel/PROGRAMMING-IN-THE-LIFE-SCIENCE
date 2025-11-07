@@ -28,6 +28,10 @@
     input {
       margin-left: 5px;
     }
+
+    a {
+      color: blue;
+    }
   </style>
 </head>
 
@@ -110,7 +114,11 @@
         tr.innerHTML = `
           <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
           <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
-          <td>${row.biological_process ? row.biological_process.value : ""}</td>
+          <td>${
+            row.biological_process && row.biological_processLabel
+              ? `<a href="${row.biological_process.value}" target="_blank" rel="noopener">${row.biological_process.value}</a>`
+              : (row.biological_process ? row.biological_process.value : "")
+          }</td>
           <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
         `;
         tbody.appendChild(tr);
@@ -236,7 +244,6 @@
       }
 
       fetchData(search_query, true, raw);
-      renderResults(window.lastResults, 'table');
     });
 
     function renderResults(results, mode) {
@@ -260,7 +267,11 @@
           tr.innerHTML = `
         <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
         <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
-        <td>${row.biological_process ? row.biological_process.value : ""}</td>
+        <td>${
+          row.biological_process && row.biological_processLabel
+            ? `<a href="${row.biological_process.value}" target="_blank" rel="noopener">${row.biological_process.value}</a>`
+            : (row.biological_process ? row.biological_process.value : "")
+        }</td>
         <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
       `;
           tbody.appendChild(tr);
