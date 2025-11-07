@@ -98,50 +98,23 @@
       // Show message if no results found
       if (results.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4">No results found.</td></tr>`;
+        // Always show thead for all results
+        document.querySelector("#resultsTable thead").style.display = "table-header-group";
         return;
       }
 
-      if (isSearch) {
-        // For a protein search: show protein name and UniProt ID once
-        const first = results[0];
-        const infoRow = document.createElement("tr");
-        infoRow.innerHTML = `
-          <td colspan="4">
-            <strong>Protein Name:</strong> ${first.itemLabel ? first.itemLabel.value : ""} &nbsp;|&nbsp;
-            <strong>UniProt ID:</strong> ${first.uniprotid ? first.uniprotid.value : "N/A"}
-          </td>
+      // For both main and search, show all results in table form with headers
+      document.querySelector("#resultsTable thead").style.display = "table-header-group";
+      results.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
+          <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
+          <td>${row.biological_process ? row.biological_process.value : ""}</td>
+          <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
         `;
-        tbody.appendChild(infoRow);
-
-        // Show only the biological processes in the table
-        results.forEach(row => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td colspan="2"></td> <!-- leave protein info columns empty -->
-            <td>${row.biological_process ? row.biological_process.value : ""}</td>
-            <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        // Hide table headers for search results
-        document.querySelector("#resultsTable thead").style.display = "none";
-
-      } else {
-        // For the main query, display full table
-        document.querySelector("#resultsTable thead").style.display = "table-header-group";
-
-        results.forEach(row => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
-            <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
-            <td>${row.biological_process ? row.biological_process.value : ""}</td>
-            <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      }
+        tbody.appendChild(tr);
+      });
     }
 
 
@@ -239,6 +212,7 @@
             SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
                 ?item wdt:P352 "${name}";
                     wdt:P703 wd:Q15978631.
+                OPTIONAL { ?item wdt:P352 ?uniprotid. }
                 OPTIONAL { ?item wdt:P682 ?biological_process. }
                 SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
             }
