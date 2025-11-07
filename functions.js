@@ -1,5 +1,9 @@
 const endpoint = "https://query.wikidata.org/sparql";
 
+
+
+
+
 // Query to fetch all human proteins and their biological processes
 const main_query = `
   SELECT ?item ?uniprotid ?tax_node ?biological_process ?biological_processLabel ?itemLabel WHERE {
@@ -9,8 +13,12 @@ const main_query = `
     OPTIONAL { ?item wdt:P682 ?biological_process. }
     ?item wdt:P31 wd:Q8054.
   }
-  LIMIT 1000
+  LIMIT 10000
 `;
+
+
+
+
 
 // Function to fetch data from Wikidata and populate the table
 async function fetchData(query, isSearch = false, proteinName = "") {
@@ -67,6 +75,8 @@ async function fetchData(query, isSearch = false, proteinName = "") {
   }
 }
 
+
+
 // Create the search input and show the search button
 function createSearchUI() {
   if (document.getElementById("proteinInput")) return;
@@ -82,11 +92,15 @@ function createSearchUI() {
   searchBtn.before(input);
 }
 
+
+
 // Escape user input for SPARQL
 function escapeForSPARQL(s) {
   if (!s) return "";
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
 }
+
+
 
 // Event listeners
 document.getElementById("fetchBtn").addEventListener("click", () => {
