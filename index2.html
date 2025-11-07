@@ -34,6 +34,7 @@
     <tbody></tbody>
   </table>
 
+<!--
   <script>
     const endpoint = "https://query.wikidata.org/sparql";
 
@@ -85,7 +86,7 @@
         results.forEach(row => {
           const tr = document.createElement("tr");
           tr.innerHTML = `
-            <td colspan="2"></td> <!-- leave protein info columns empty -->
+            <td colspan="2"></td> <!-- leave protein info columns empty 
             <td>${row.biological_process ? row.biological_process.value : ""}</td>
             <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
           `;
@@ -172,6 +173,8 @@
 
       fetchData(search_query, true, raw);
     });
-  </script>
+
+Link external JavaScript -->
+    <script src="functions.js"></script>
 </body>
 </html>
