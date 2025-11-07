@@ -97,6 +97,16 @@
       const results = data.results.bindings || [];
       window.lastResults = results;
       const tbody = document.querySelector("#resultsTable tbody");
+      const resultsTable = document.getElementById("resultsTable");
+      const displayMode = document.getElementById("displayMode").value;
+
+      // Hide table if display mode is not table
+      if (displayMode !== "table") {
+        resultsTable.style.display = "none";
+        return;
+      }
+
+      resultsTable.style.display = "table";
       tbody.innerHTML = ""; // clear previous results
 
       // Show message if no results found
@@ -176,7 +186,12 @@
     document.getElementById("fetchBtn").addEventListener("click", () => {
       fetchData(main_query);   // fetch all proteins
       createSearchUI();        // show search input and button
-      document.querySelector("#resultsTable thead").style.display = "table-header-group";
+      if (document.getElementById("displayMode").value === "table") {
+        document.querySelector("#resultsTable thead").style.display = "table-header-group";
+        document.getElementById("resultsTable").style.display = "table";
+      } else {
+        document.getElementById("resultsTable").style.display = "none";
+      }
     });
 
     // Run a protein search when clicking "Search Protein" button
@@ -250,6 +265,8 @@
       const displayMode = mode || document.getElementById("displayMode").value;
       const tbody = document.querySelector("#resultsTable tbody");
       let chartDiv = document.getElementById("chart");
+      const resultsTable = document.getElementById("resultsTable");
+
       if (!chartDiv) {
         chartDiv = document.createElement("div");
         chartDiv.id = "chart";
@@ -261,6 +278,7 @@
       chartDiv.innerHTML = "";
 
       if (displayMode === "table") {
+        resultsTable.style.display = "table";
         document.querySelector("#resultsTable thead").style.display = "table-header-group";
         results.forEach(row => {
           const tr = document.createElement("tr");
@@ -277,10 +295,13 @@
           tbody.appendChild(tr);
         });
 
-      } else if (displayMode === "bubble") {
-        chartDiv.textContent = "Bubble chart placeholder";
-      } else if (displayMode === "graph") {
-        chartDiv.textContent = "Network graph placeholder";
+      } else {
+        resultsTable.style.display = "none";
+        if (displayMode === "bubble") {
+          chartDiv.textContent = "Bubble chart placeholder";
+        } else if (displayMode === "graph") {
+          chartDiv.textContent = "Network graph placeholder";
+        }
       }
       // You could add more modes like graph/bar chart here
     }
