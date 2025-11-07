@@ -1,163 +1,251 @@
 const endpoint = "https://query.wikidata.org/sparql";
 
-
-
-
-
-// Query to fetch all human proteins and their biological processes
-const main_query = `
-  SELECT ?item ?uniprotid ?tax_node ?biological_process ?biological_processLabel ?itemLabel WHERE {
-    ?item wdt:P352 ?uniprotid;
-          wdt:P703 wd:Q15978631.
-    SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-    OPTIONAL { ?item wdt:P682 ?biological_process. }
-    ?item wdt:P31 wd:Q8054.
-  }
-  LIMIT 10000
-`;
-
-// Create Query that finds all proteins that have a biological process with anatomical location "heart"
-const heart_query = `
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q1072.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000 
-`;
-
-// Create Query that finds all proteins that have a biological process with anatomical location "brain"
-const brain_query = `
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q1073.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
-
-// Function to fetch data from Wikidata and populate the table
-async function fetchData(query, isSearch = false, proteinName = "") {
-  const url = endpoint + "?query=" + encodeURIComponent(query);
-  const response = await fetch(url, {
-    headers: { Accept: "application/sparql-results+json" },
-  });
-
-  const data = await response.json();
-  const results = data.results.bindings || [];
-  const tbody = document.querySelector("#resultsTable tbody");
-  tbody.innerHTML = "";
-
-  if (results.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4">No results found.</td></tr>`;
-    return;
-  }
-
-  if (isSearch) {
-    const first = results[0];
-    const infoRow = document.createElement("tr");
-    infoRow.innerHTML = `
-      <td colspan="4">
-        <strong>Protein Name:</strong> ${first.itemLabel ? first.itemLabel.value : ""} &nbsp;|&nbsp;
-        <strong>UniProt ID:</strong> ${first.uniprotid ? first.uniprotid.value : "N/A"}
-      </td>
+    // Query to fetch all human proteins and their biological processes
+    const main_query = `
+      SELECT ?item ?uniprotid ?tax_node ?biological_process ?biological_processLabel ?itemLabel WHERE {
+        ?item wdt:P352 ?uniprotid;
+              wdt:P703 wd:Q15978631.
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+        OPTIONAL { ?item wdt:P682 ?biological_process. }
+        ?item wdt:P31 wd:Q8054.
+      }
+      LIMIT 1000
     `;
-    tbody.appendChild(infoRow);
 
-    results.forEach((row) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td colspan="2"></td>
-        <td>${row.biological_process ? row.biological_process.value : ""}</td>
-        <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
-      `;
-      tbody.appendChild(tr);
+    // Function to fetch data from Wikidata and populate the table
+    // 'isSearch' indicates whether this is a search for a single protein
+    // 'proteinName' is used for display at the top of search results
+    async function fetchData(query, isSearch = false, proteinName = "") {
+      const url = endpoint + "?query=" + encodeURIComponent(query);
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/sparql-results+json' }
+      });
+
+      const data = await response.json();
+      const results = data.results.bindings || [];
+      window.lastResults = results;
+      const tbody = document.querySelector("#resultsTable tbody");
+      const resultsTable = document.getElementById("resultsTable");
+      const displayMode = document.getElementById("displayMode").value;
+
+      // Hide table if display mode is not table
+      if (displayMode !== "table") {
+        resultsTable.style.display = "none";
+        return;
+      }
+
+      resultsTable.style.display = "table";
+      tbody.innerHTML = ""; // clear previous results
+
+      // Show message if no results found
+      if (results.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4">No results found.</td></tr>`;
+        // Always show thead for all results
+        document.querySelector("#resultsTable thead").style.display = "table-header-group";
+        return;
+      }
+
+      // For both main and search, show all results in table form with headers
+      document.querySelector("#resultsTable thead").style.display = "table-header-group";
+      results.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
+          <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
+          <td>${
+            row.biological_process && row.biological_processLabel
+              ? `<a href="${row.biological_process.value}" target="_blank" rel="noopener">${row.biological_process.value}</a>`
+              : (row.biological_process ? row.biological_process.value : "")
+          }</td>
+          <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+
+
+
+
+
+    // Function to create the search input, dropdown, and show the search button
+    function createSearchUI() {
+      // Prevent creating the UI twice
+      if (document.getElementById("proteinInput")) return;
+
+      // Create the protein input box
+      const input = document.createElement("input");
+      input.type = "text";
+      input.id = "proteinInput";
+      input.placeholder = "Enter protein name or ID";
+
+      // Create dropdown for selecting search mode
+      const select = document.createElement("select");
+      select.id = "searchMode";
+
+      const options = [
+        { value: "name", label: "Search by Protein Name" },
+        { value: "uniprot", label: "Search by UniProt ID" },
+        { value: "process", label: "Search by Biological Process" }
+      ];
+
+      options.forEach(opt => {
+        const option = document.createElement("option");
+        option.value = opt.value;
+        option.textContent = opt.label;
+        select.appendChild(option);
+      });
+
+      // Show and position the Search button
+      const searchBtn = document.getElementById("SearchBtn");
+      searchBtn.style.display = "inline";
+
+      // Insert the input and dropdown before the search button
+      searchBtn.before(input);
+      searchBtn.before(select);
+    }
+    // Escape user input to safely include in SPARQL query
+    function escapeForSPARQL(s) {
+      if (!s) return "";
+      return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
+    }
+
+    // Run the main query when clicking "Run Query" button
+    document.getElementById("fetchBtn").addEventListener("click", () => {
+      fetchData(main_query);   // fetch all proteins
+      createSearchUI();        // show search input and button
+      if (document.getElementById("displayMode").value === "table") {
+        document.querySelector("#resultsTable thead").style.display = "table-header-group";
+        document.getElementById("resultsTable").style.display = "table";
+      } else {
+        document.getElementById("resultsTable").style.display = "none";
+      }
     });
 
-    document.querySelector("#resultsTable thead").style.display = "none";
-  } else {
-    document.querySelector("#resultsTable thead").style.display = "table-header-group";
+    // Run a protein search when clicking "Search Protein" button
+    document.getElementById("SearchBtn").addEventListener("click", () => {
+      const inputEl = document.getElementById("proteinInput");
+      const modeEl = document.getElementById("searchMode");
 
-    results.forEach((row) => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
+      if (!inputEl || !modeEl) {
+        return alert('Please click "Refresh Query" first to show the search box.');
+      }
+
+      const raw = inputEl.value.trim();
+      if (!raw) return alert("Please enter a protein name or ID!");
+
+      const name = escapeForSPARQL(raw);
+      const mode = modeEl.value;
+
+      let search_query = "";
+
+      if (mode === "name") {
+        // Search by protein label
+        search_query = `
+            SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
+                ?item wdt:P31 wd:Q8054;
+                    wdt:P703 wd:Q15978631.
+                OPTIONAL { ?item wdt:P352 ?uniprotid. }
+                OPTIONAL { ?item wdt:P682 ?biological_process. }
+                ?item rdfs:label ?itemLabel .
+                FILTER(LANG(?itemLabel) = "en")
+                FILTER(CONTAINS(LCASE(STR(?itemLabel)), LCASE("${name}")))
+                OPTIONAL {
+                ?biological_process rdfs:label ?biological_processLabel .
+                FILTER(LANG(?biological_processLabel) = "en")
+                }
+            }
+            LIMIT 200
+            `;
+      } else if (mode === "uniprot") {
+        // Search by UniProt ID
+        search_query = `
+            SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
+                ?item wdt:P352 "${name}";
+                    wdt:P703 wd:Q15978631.
+                OPTIONAL { ?item wdt:P352 ?uniprotid. }
+                OPTIONAL { ?item wdt:P682 ?biological_process. }
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+            }
+            LIMIT 50
+            `;
+      } else if (mode === "process") {
+        // Search by biological process label
+        search_query = `
+            SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
+                ?item wdt:P31 wd:Q8054;
+                    wdt:P703 wd:Q15978631;
+                    wdt:P682 ?biological_process.
+                OPTIONAL { ?item wdt:P352 ?uniprotid. }
+                ?biological_process rdfs:label ?biological_processLabel .
+                FILTER(LANG(?biological_processLabel) = "en")
+                FILTER(CONTAINS(LCASE(STR(?biological_processLabel)), LCASE("${name}")))
+                SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+            }
+            LIMIT 200
+            `;
+      }
+
+      fetchData(search_query, true, raw);
+    });
+
+    function renderResults(results, mode) {
+      const displayMode = mode || document.getElementById("displayMode").value;
+      const tbody = document.querySelector("#resultsTable tbody");
+      let chartDiv = document.getElementById("chart");
+      const resultsTable = document.getElementById("resultsTable");
+
+      if (!chartDiv) {
+        chartDiv = document.createElement("div");
+        chartDiv.id = "chart";
+        document.body.appendChild(chartDiv);
+      }
+
+      // Clear previous content
+      tbody.innerHTML = "";
+      chartDiv.innerHTML = "";
+
+      if (displayMode === "table") {
+        resultsTable.style.display = "table";
+        document.querySelector("#resultsTable thead").style.display = "table-header-group";
+        results.forEach(row => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
         <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
         <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
-        <td>${row.biological_process ? row.biological_process.value : ""}</td>
+        <td>${
+          row.biological_process && row.biological_processLabel
+            ? `<a href="${row.biological_process.value}" target="_blank" rel="noopener">${row.biological_process.value}</a>`
+            : (row.biological_process ? row.biological_process.value : "")
+        }</td>
         <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
       `;
-      tbody.appendChild(tr);
-    });
-  }
-}
+          tbody.appendChild(tr);
+        });
 
-
-
-// Create the search input and show the search button
-function createSearchUI() {
-  if (document.getElementById("proteinInput")) return;
-
-  const input = document.createElement("input");
-  input.type = "text";
-  input.id = "proteinInput";
-  input.placeholder = "Enter protein name";
-
-  const searchBtn = document.getElementById("SearchBtn");
-  searchBtn.style.display = "inline";
-
-  searchBtn.before(input);
-}
-
-
-
-// Escape user input for SPARQL
-function escapeForSPARQL(s) {
-  if (!s) return "";
-  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
-}
-
-
-
-// Event listeners
-document.getElementById("fetchBtn").addEventListener("click", () => {
-  fetchData(main_query);
-  createSearchUI();
-  document.querySelector("#resultsTable thead").style.display = "table-header-group";
-});
-
-document.getElementById("SearchBtn").addEventListener("click", () => {
-  const inputEl = document.getElementById("proteinInput");
-  if (!inputEl) {
-    return alert('Please click "Run Query" first to show the search box.');
-  }
-
-  const raw = inputEl.value.trim();
-  if (!raw) return alert("Please enter a protein name!");
-
-  const name = escapeForSPARQL(raw);
-
-  const search_query = `
-    SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
-      ?item wdt:P31 wd:Q8054;
-            wdt:P703 wd:Q15978631.
-      OPTIONAL { ?item wdt:P352 ?uniprotid. }
-      OPTIONAL { ?item wdt:P682 ?biological_process. }
-      ?item rdfs:label ?itemLabel .
-      FILTER(LANG(?itemLabel) = "en")
-      FILTER(CONTAINS(LCASE(STR(?itemLabel)), LCASE("${name}")))
-      OPTIONAL {
-        ?biological_process rdfs:label ?biological_processLabel .
-        FILTER(LANG(?biological_processLabel) = "en")
+      } else {
+        resultsTable.style.display = "none";
+        if (displayMode === "bubble") {
+          chartDiv.textContent = "Bubble chart placeholder";
+        } else if (displayMode === "graph") {
+          chartDiv.textContent = "Network graph placeholder";
+        }
       }
+      // You could add more modes like graph/bar chart here
     }
-    LIMIT 200
-  `;
 
-  fetchData(search_query, true, raw);
-});
+    document.getElementById("displayMode").addEventListener("change", () => {
+      if (window.lastResults) {
+        renderResults(window.lastResults);
+      }
+    });
+
+
+
+  
+
+
+    // Automatically trigger the main query when the page loads
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("fetchBtn").click();
+    });
