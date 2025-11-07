@@ -17,7 +17,7 @@ const main_query = `
 `;
 
 // Create Query that finds all proteins that have a biological process with anatomical location "heart"
-const_heart_query = `
+const heart_query = `
 SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
   ?protein wdt:P31 wd:Q8054;
     wdt:P703 wd:Q15978631;
@@ -30,7 +30,7 @@ LIMIT 1000
 `;
 
 // Create Query that finds all proteins that have a biological process with anatomical location "brain"
-const_brain_query = `
+const brain_query = `
 SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
   ?protein wdt:P31 wd:Q8054;
     wdt:P703 wd:Q15978631;
