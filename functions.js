@@ -1,12 +1,9 @@
 const endpoint = "https://query.wikidata.org/sparql";
 
-
-
 // Automatically trigger the main query when the page loads
 window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("fetchBtn").click();
 });
-
 
 
 
@@ -48,6 +45,8 @@ const brain_query = `
     `;
 
 
+
+
 // Function to fetch data from Wikidata and populate the table
 // 'isSearch' indicates whether this is a search for a single protein
 // 'proteinName' is used for display at the top of search results
@@ -63,39 +62,42 @@ async function fetchData(query, isSearch = false, proteinName = "") {
   const tbody = document.querySelector("#resultsTable tbody");
   const resultsTable = document.getElementById("resultsTable");
   const displayMode = document.getElementById("displayMode").value;
+}
 
-  // Hide table if display mode is not table
-  if (displayMode !== "table") {
-    resultsTable.style.display = "none";
-    return;
-  }
 
-  resultsTable.style.display = "table";
+// Render table format
+function renderTable(results) {
+  const table = document.getElementById("resultsTable");
+  const tbody = table.querySelector("tbody");
+
+  // Clear old chart if exists
+  const oldChart = document.getElementById("chart");
+  if (oldChart) oldChart.remove();
+
+  table.style.display = "table";
+  document.querySelector("#resultsTable thead").style.display = "table-header-group";
+
   tbody.innerHTML = ""; // clear previous results
 
-  // Show message if no results found
-  if (results.length === 0) {
+  if (!results || results.length === 0) {
     tbody.innerHTML = `<tr><td colspan="4">No results found.</td></tr>`;
-    // Always show thead for all results
-    document.querySelector("#resultsTable thead").style.display = "table-header-group";
     return;
   }
 
-  // For both main and search, show all results in table form with headers
-  document.querySelector("#resultsTable thead").style.display = "table-header-group";
   results.forEach(row => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-          <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
-          <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
-         <td>${row.biological_process ? `<a href="${row.biological_process.value}" target="_blank" rel="noopener">${row.biological_process.value}</a>` : ""}</td>
-          <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
-        `;
+      <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
+      <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
+      <td>${row.biological_process ? `<a href="${row.biological_process.value}" target="_blank" rel="noopener">${row.biological_process.value}</a>` : ""}</td>
+      <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
+    `;
     tbody.appendChild(tr);
   });
-  // Save the current table HTML to a global variable for later use
   window.lastTableHTML = tbody.innerHTML;
 }
+
+
 
 
 
@@ -240,21 +242,25 @@ document.getElementById("SearchBtn").addEventListener("click", () => {
   });
 });
 
-function renderResults(results, mode) {
-  const displayMode = mode || document.getElementById("displayMode").value;
-  const tbody = document.querySelector("#resultsTable tbody");
-  let chartDiv = document.getElementById("chart");
-  const resultsTable = document.getElementById("resultsTable");
+function renderResults(results) {
+  const displayMode = document.getElementById("displayMode").value;
+  const table = document.getElementById("resultsTable");
+  const tbody = table.querySelector("tbody");
 
-  if (!chartDiv) {
-    chartDiv = document.createElement("div");
-    chartDiv.id = "chart";
-    document.body.appendChild(chartDiv);
-  }
+  // Remove old chart if exists
+  const oldChart = document.getElementById("chart");
+  if (oldChart) oldChart.remove();
 
-  // Clear previous content
+  // Clear table content
   tbody.innerHTML = "";
-  chartDiv.innerHTML = "";
+  table.style.display = "none";
+
+  if (!results || results.length === 0) {
+    table.style.display = "table";
+    document.querySelector("#resultsTable thead").style.display = "table-header-group";
+    tbody.innerHTML = `<tr><td colspan="4">No results found.</td></tr>`;
+    return;
+  }
 
   // Show/hide table based on display mode
   if (displayMode === "table") {
