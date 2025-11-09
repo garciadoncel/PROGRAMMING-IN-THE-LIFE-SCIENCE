@@ -7,6 +7,43 @@ window.addEventListener("DOMContentLoaded", () => {
 
 
 
+// Run a protein search when clicking "Search Protein" button
+document.getElementById("SearchBtn").addEventListener("click", () => {
+  const inputEl = document.getElementById("proteinInput");
+  const modeEl = document.getElementById("searchMode");
+
+  if (!inputEl || !modeEl) {
+    return alert('Please click "Refresh Query" first to show the search box.');
+  }
+
+  const raw = inputEl.value.trim();
+  if (!raw) return alert("Please enter a protein name or ID!");
+
+  const searchQuery = createProteinSearchQuery(raw, modeEl.value);
+  fetchData(searchQuery, true, raw); // fetchData handles display
+});
+
+// Run the main query when clicking "Run Query" button
+document.getElementById("fetchBtn").addEventListener("click", () => {
+  fetchData(main_query);   // fetch all proteins
+  createSearchUI();        // show search input and button
+
+  const resultsTable = document.getElementById("resultsTable");
+  const displayMode = document.getElementById("displayMode").value;
+
+  if (displayMode === "table") {
+    document.querySelector("#resultsTable thead").style.display = "table-header-group";
+    resultsTable.style.display = "table";
+  } else {
+    resultsTable.style.display = "none";
+  }
+});
+
+
+
+
+
+
 // Query to fetch all human proteins and their biological processes
 const main_query = `
       SELECT ?item ?uniprotid ?tax_node ?biological_process ?biological_processLabel ?itemLabel WHERE {
@@ -59,44 +96,8 @@ async function fetchData(query, isSearch = false, proteinName = "") {
   const data = await response.json();
   const results = data.results.bindings || [];
   window.lastResults = results;
-  const tbody = document.querySelector("#resultsTable tbody");
-  const resultsTable = document.getElementById("resultsTable");
-  const displayMode = document.getElementById("displayMode").value;
+  renderResults(results);
 }
-
-
-// Render table format
-function renderTable(results) {
-  const table = document.getElementById("resultsTable");
-  const tbody = table.querySelector("tbody");
-
-  // Clear old chart if exists
-  const oldChart = document.getElementById("chart");
-  if (oldChart) oldChart.remove();
-
-  table.style.display = "table";
-  document.querySelector("#resultsTable thead").style.display = "table-header-group";
-
-  tbody.innerHTML = ""; // clear previous results
-
-  if (!results || results.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4">No results found.</td></tr>`;
-    return;
-  }
-
-  results.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
-      <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
-      <td>${row.biological_process ? `<a href="${row.biological_process.value}" target="_blank" rel="noopener">${row.biological_process.value}</a>` : ""}</td>
-      <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-  window.lastTableHTML = tbody.innerHTML;
-}
-
 
 
 
@@ -144,146 +145,120 @@ function escapeForSPARQL(s) {
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
 }
 
-// Run the main query when clicking "Run Query" button
-document.getElementById("fetchBtn").addEventListener("click", () => {
-  fetchData(main_query);   // fetch all proteins
-  createSearchUI();        // show search input and button
-  if (document.getElementById("displayMode").value === "table") {
-    document.querySelector("#resultsTable thead").style.display = "table-header-group";
-    document.getElementById("resultsTable").style.display = "table";
-  } else {
-    document.getElementById("resultsTable").style.display = "none";
-  }
-});
 
-// Run a protein search when clicking "Search Protein" button
-document.getElementById("SearchBtn").addEventListener("click", () => {
-  const inputEl = document.getElementById("proteinInput");
-  const modeEl = document.getElementById("searchMode");
 
-  if (!inputEl || !modeEl) {
-    return alert('Please click "Refresh Query" first to show the search box.');
-  }
 
-  const raw = inputEl.value.trim();
-  if (!raw) return alert("Please enter a protein name or ID!");
 
-  const name = escapeForSPARQL(raw);
-  const mode = modeEl.value;
 
-  let search_query = "";
+
+// Build SPARQL query for searching proteins
+function createProteinSearchQuery(name, mode) {
+  name = escapeForSPARQL(name);
 
   if (mode === "name") {
-    // Search by protein label
-    search_query = `
-            SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
-                ?item wdt:P31 wd:Q8054;
-                    wdt:P703 wd:Q15978631.
-                OPTIONAL { ?item wdt:P352 ?uniprotid. }
-                OPTIONAL { ?item wdt:P682 ?biological_process. }
-                ?item rdfs:label ?itemLabel .
-                FILTER(LANG(?itemLabel) = "en")
-                FILTER(CONTAINS(LCASE(STR(?itemLabel)), LCASE("${name}")))
-                OPTIONAL {
-                ?biological_process rdfs:label ?biological_processLabel .
-                FILTER(LANG(?biological_processLabel) = "en")
-                }
-            }
-            LIMIT 200
-            `;
-  } else if (mode === "uniprot") {
-    // Search by UniProt ID
-    search_query = `
-            SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
-                ?item wdt:P352 "${name}";
-                    wdt:P703 wd:Q15978631.
-                OPTIONAL { ?item wdt:P352 ?uniprotid. }
-                OPTIONAL { ?item wdt:P682 ?biological_process. }
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-            }
-            LIMIT 50
-            `;
-  } else if (mode === "process") {
-    // Search by biological process label
-    search_query = `
-            SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
-                ?item wdt:P31 wd:Q8054;
-                    wdt:P703 wd:Q15978631;
-                    wdt:P682 ?biological_process.
-                OPTIONAL { ?item wdt:P352 ?uniprotid. }
-                ?biological_process rdfs:label ?biological_processLabel .
-                FILTER(LANG(?biological_processLabel) = "en")
-                FILTER(CONTAINS(LCASE(STR(?biological_processLabel)), LCASE("${name}")))
-                SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-            }
-            LIMIT 200
-            `;
-  }
-
-  fetchData(search_query, true, raw).then(() => {
-    const displayMode = document.getElementById("displayMode").value;
-    const resultsTable = document.getElementById("resultsTable");
-    if (displayMode === "graph") {
-      resultsTable.style.display = "none";
-      const chartDivId = "chart";
-      let chartDiv = document.getElementById(chartDivId);
-      if (!chartDiv) {
-        chartDiv = document.createElement("div");
-        chartDiv.id = chartDivId;
-        document.body.appendChild(chartDiv);
+    return `
+      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
+        ?item wdt:P31 wd:Q8054;
+              wdt:P703 wd:Q15978631.
+        OPTIONAL { ?item wdt:P352 ?uniprotid. }
+        OPTIONAL { ?item wdt:P682 ?biological_process. }
+        ?item rdfs:label ?itemLabel .
+        FILTER(LANG(?itemLabel) = "en")
+        FILTER(CONTAINS(LCASE(STR(?itemLabel)), LCASE("${name}")))
+        OPTIONAL {
+          ?biological_process rdfs:label ?biological_processLabel .
+          FILTER(LANG(?biological_processLabel) = "en")
+        }
       }
-      renderNetworkGraph(window.lastResults, chartDiv);
-    } else if (displayMode === "table") {
-      resultsTable.style.display = "table";
-      document.querySelector("#resultsTable thead").style.display = "table-header-group";
-    } else {
-      resultsTable.style.display = "none";
-    }
-  });
-});
+      LIMIT 200
+    `;
+  } else if (mode === "uniprot") {
+    return `
+      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
+        ?item wdt:P352 "${name}";
+              wdt:P703 wd:Q15978631.
+        OPTIONAL { ?item wdt:P352 ?uniprotid. }
+        OPTIONAL { ?item wdt:P682 ?biological_process. }
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      }
+      LIMIT 50
+    `;
+  } else if (mode === "process") {
+    return `
+      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
+        ?item wdt:P31 wd:Q8054;
+              wdt:P703 wd:Q15978631;
+              wdt:P682 ?biological_process.
+        OPTIONAL { ?item wdt:P352 ?uniprotid. }
+        ?biological_process rdfs:label ?biological_processLabel .
+        FILTER(LANG(?biological_processLabel) = "en")
+        FILTER(CONTAINS(LCASE(STR(?biological_processLabel)), LCASE("${name}")))
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      }
+      LIMIT 200
+    `;
+  }
+}
 
-function renderResults(results) {
-  const displayMode = document.getElementById("displayMode").value;
+
+
+
+
+
+
+
+// Render table format
+function renderTable(results) {
   const table = document.getElementById("resultsTable");
   const tbody = table.querySelector("tbody");
+
+  // Clear old chart if exists
+  const oldChart = document.getElementById("chart");
+  if (oldChart) oldChart.remove();
+
+  table.style.display = "table";
+  document.querySelector("#resultsTable thead").style.display = "table-header-group";
+
+  tbody.innerHTML = ""; // clear previous results
+
+  if (!results || results.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="4">No results found.</td></tr>`;
+    return;
+  }
+
+  results.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.itemLabel ? row.itemLabel.value : ""}</td>
+      <td>${row.uniprotid ? row.uniprotid.value : ""}</td>
+      <td>${row.biological_process ? `<a href="${row.biological_process.value}" target="_blank" rel="noopener">${row.biological_process.value}</a>` : ""}</td>
+      <td>${row.biological_processLabel ? row.biological_processLabel.value : ""}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  window.lastTableHTML = tbody.innerHTML;
+}
+
+
+
+// ---------- Graph wrapper ----------
+function renderGraph(results) {
+  const table = document.getElementById("resultsTable");
+  table.style.display = "none";
 
   // Remove old chart if exists
   const oldChart = document.getElementById("chart");
   if (oldChart) oldChart.remove();
 
-  // Clear table content
-  tbody.innerHTML = "";
-  table.style.display = "none";
+  // Create new chart container
+  const chartDiv = document.createElement("div");
+  chartDiv.id = "chart";
+  document.body.appendChild(chartDiv);
 
-  if (!results || results.length === 0) {
-    table.style.display = "table";
-    document.querySelector("#resultsTable thead").style.display = "table-header-group";
-    tbody.innerHTML = `<tr><td colspan="4">No results found.</td></tr>`;
-    return;
-  }
-
-  // Show/hide table based on display mode
-  if (displayMode === "table") {
-    resultsTable.style.display = "table";
-    document.querySelector("#resultsTable thead").style.display = "table-header-group";
-  } else {
-    resultsTable.style.display = "none";
-    if (displayMode === "bubble") {
-      chartDiv.textContent = "Bubble chart placeholder";
-    } else if (displayMode === "graph") {
-      renderNetworkGraph(results, chartDiv);
-    }
-  }
-  // Can add more here with the human body
-
-  // Listen for display mode changes and re-render results if available
-  document.getElementById("displayMode").addEventListener("change", () => {
-    if (window.lastResults) {
-      renderResults(window.lastResults);
-    }
-  });
-
+  // Call your current graph code
+  renderNetworkGraph(results, chartDiv);
 }
+
 
 // D3 Network Graph Script
 function renderNetworkGraph(results, container) {
@@ -450,4 +425,19 @@ function renderNetworkGraph(results, container) {
   node.on("mousedown.zoom", event => event.stopPropagation())
     .on("touchstart.zoom", event => event.stopPropagation());
 }
+
+
+
+// ---------- Master Render ----------
+function renderResults(results) {
+  const displayMode = document.getElementById("displayMode").value;
+
+  if (displayMode === "table") renderTable(results);
+  else if (displayMode === "graph") renderGraph(results);
+  else if (displayMode === "bubble") renderBubble(results);
+}
+
+
+
+
 
