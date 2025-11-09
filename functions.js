@@ -5,8 +5,6 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("fetchBtn").click();
 });
 
-
-
 // Run a protein search when clicking "Search Protein" button
 document.getElementById("SearchBtn").addEventListener("click", () => {
   const inputEl = document.getElementById("proteinInput");
@@ -20,7 +18,7 @@ document.getElementById("SearchBtn").addEventListener("click", () => {
   if (!raw) return alert("Please enter a protein name or ID!");
 
   const searchQuery = createProteinSearchQuery(raw, modeEl.value);
-  fetchData(searchQuery, true, raw); // fetchData handles display
+  fetchData(searchQuery, true, raw); // <-- searchValue passed here
 });
 
 // Run the main query when clicking "Run Query" button
@@ -38,10 +36,6 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
     resultsTable.style.display = "none";
   }
 });
-
-
-
-
 
 
 // Query to fetch all human proteins and their biological processes
@@ -81,13 +75,10 @@ const brain_query = `
     LIMIT 1000
     `;
 
-
-
-
 // Function to fetch data from Wikidata and populate the table
 // 'isSearch' indicates whether this is a search for a single protein
 // 'proteinName' is used for display at the top of search results
-async function fetchData(query, isSearch = false, proteinName = "") {
+async function fetchData(query, isSearch = false, searchValue = "") {
   const url = endpoint + "?query=" + encodeURIComponent(query);
   const response = await fetch(url, {
     headers: { 'Accept': 'application/sparql-results+json' }
@@ -96,10 +87,15 @@ async function fetchData(query, isSearch = false, proteinName = "") {
   const data = await response.json();
   const results = data.results.bindings || [];
   window.lastResults = results;
-  renderResults(results);
+
+  let searchType = null;
+  if (isSearch) {
+    const modeEl = document.getElementById("searchMode");
+    searchType = modeEl ? modeEl.value : null;
+  }
+
+  renderResults(results, searchType, searchValue);
 }
-
-
 
 
 // Function to create the search input, dropdown, and show the search button
@@ -144,10 +140,6 @@ function escapeForSPARQL(s) {
   if (!s) return "";
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
 }
-
-
-
-
 
 
 
@@ -202,11 +194,6 @@ function createProteinSearchQuery(name, mode) {
 
 
 
-
-
-
-
-
 // Render table format
 function renderTable(results) {
   const table = document.getElementById("resultsTable");
@@ -240,202 +227,178 @@ function renderTable(results) {
 }
 
 
+function renderNetworkGraph(results, searchType = null, searchValue = null) {
+  // Get or create chart container
+  let chartDiv = document.getElementById("chart");
+  if (!chartDiv) {
+    chartDiv = document.createElement("div");
+    chartDiv.id = "chart";
+    document.body.appendChild(chartDiv);
+  } else {
+    chartDiv.innerHTML = ""; // clear previous chart
+  }
 
-// ---------- Graph wrapper ----------
-function renderGraph(results) {
-  const table = document.getElementById("resultsTable");
-  table.style.display = "none";
-
-  // Remove old chart if exists
-  const oldChart = document.getElementById("chart");
-  if (oldChart) oldChart.remove();
-
-  // Create new chart container
-  const chartDiv = document.createElement("div");
-  chartDiv.id = "chart";
-  document.body.appendChild(chartDiv);
-
-  // Call your current graph code
-  renderNetworkGraph(results, chartDiv);
-}
-
-
-// D3 Network Graph Script
-function renderNetworkGraph(results, container) {
-  // Clear previous content
-  container.innerHTML = "";
-
-  // Set larger dimensions
-  const width = 1200;
-  const height = 800;
+  const width = window.innerWidth;
+  const height = window.innerHeight - window.innerHeight / 4;
 
   // Prepare nodes and links
   const nodesMap = new Map();
   const links = [];
-
-  // Helper function to add node if not exists
-  function addNode(id, label, type) {
-    if (!nodesMap.has(id)) {
-      nodesMap.set(id, { id, label, type });
-    }
-  }
-
   results.forEach(d => {
-    const proteinId = d.item ? d.item.value : null;
-    const proteinLabel = d.itemLabel ? d.itemLabel.value : proteinId;
-    const processId = d.biological_process ? d.biological_process.value : null;
-    const processLabel = d.biological_processLabel ? d.biological_processLabel.value : processId;
+    const proteinId = d.item?.value;
+    const proteinLabel = d.itemLabel?.value || proteinId;
+    const processId = d.biological_process?.value;
+    const processLabel = d.biological_processLabel?.value || processId;
 
-    if (proteinId) {
-      addNode(proteinId, proteinLabel, "protein");
-    }
-    if (processId) {
-      addNode(processId, processLabel, "process");
-    }
-    if (proteinId && processId) {
-      links.push({ source: proteinId, target: processId });
-    }
+    if (proteinId && !nodesMap.has(proteinId)) nodesMap.set(proteinId, { id: proteinId, label: proteinLabel, type: "protein" });
+    if (processId && !nodesMap.has(processId)) nodesMap.set(processId, { id: processId, label: processLabel, type: "process" });
+    if (proteinId && processId) links.push({ source: proteinId, target: processId });
   });
 
   const nodes = Array.from(nodesMap.values());
 
-  // Create SVG and <g> group for zoom target
-  const svg = d3.select(container)
-    .append("svg")
+  // SVG and group
+  const svg = d3.select(chartDiv).append("svg")
     .attr("width", width)
     .attr("height", height)
-    .style("background", "#fff");
+    .style("background", "#fcfcfcff");
 
-  // Create a group for all graph elements to apply zoom/pan transforms
   const g = svg.append("g");
 
-  // Draw links
+  // Links
   const link = g.append("g")
-    .attr("stroke", "#999")
+    .attr("stroke", "#000000ff")
     .attr("stroke-opacity", 0.6)
-    .selectAll("line")
-    .data(links)
-    .join("line")
+    .selectAll("line").data(links).join("line")
     .attr("stroke-width", 2);
 
-  // Draw nodes
-  const node = g.append("g")
-    .attr("stroke", "#fff")
-    .attr("stroke-width", 2)
-    .selectAll("circle")
-    .data(nodes)
-    .join("circle")
-    .attr("r", d => d.type === "protein" ? 25 : 18)
-    .attr("fill", d => d.type === "protein" ? "#1f77b4" : "#ff7f0e")
-    // Node drag behavior is separate from canvas pan/zoom
-    .call(
-      d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended)
-    );
+  // Nodes
+const node = g.append("g")
+  .attr("stroke", "#fff")
+  .attr("stroke-width", 2)
+  .selectAll("circle").data(nodes).join("circle")
+  .attr("r", d => d.type === "protein" ? 25 : 18)
+  .attr("fill", d => {
+    if (searchType && searchValue) {
+      const searchLower = searchValue.toLowerCase();
+      const labelLower = d.label.toLowerCase();
 
-  // Add labels
-  // For process nodes (orange), show label always. For protein nodes (blue), hide label by default, show on hover.
-  const label = g.append("g")
-    .selectAll("text")
-    .data(nodes)
-    .join("text")
-    .text(d => d.label)
-    .attr("font-size", 16)
-    .attr("font-family", "sans-serif")
-    .attr("dx", 22)
-    .attr("dy", "0.35em")
-    .style("pointer-events", "none")
-    .style("display", d => d.type === "process" ? "block" : "none");
-
-  // Tooltip
-  node.append("title")
-    .text(d => d.label);
-
-  // Show/hide protein node labels on hover
-  node.on("mouseover", function (event, d) {
-    if (d.type === "protein") {
-      // Show only this protein node's label
-      label.filter(l => l.id === d.id)
-        .style("display", "block");
+      if (searchType === "process") {
+        // User searched for process -> highlight related proteins
+        if (d.type === "protein" && nodes.some(n => n.type === "process" && n.label.toLowerCase().includes(searchLower))) {
+          return "#1f77b4"; // blue = related proteins
+        } else {
+          return "#ff7f0e"; // orange = other nodes
+        }
+      } else {
+        // User searched for protein / UniProt -> highlight related processes
+        if (d.type === "process" && nodes.some(n => n.type === "protein" && n.label.toLowerCase().includes(searchLower))) {
+          return "#1f77b4"; // blue = related processes
+        } else {
+          return "#ff7f0e"; // orange = other nodes
+        }
+      }
     }
-  }).on("mouseout", function (event, d) {
-    if (d.type === "protein") {
-      // Hide this protein node's label
-      label.filter(l => l.id === d.id)
-        .style("display", "none");
+
+    // Default coloring if no search
+    return d.type === "protein" ? "#1f77b4" : "#ff7f0e";
+  })
+  .call(d3.drag()
+    .on("start", dragstarted)
+    .on("drag", dragged)
+    .on("end", dragended)
+  );
+
+  node.append("title").text(d => d.label);
+
+// Labels
+const label = g.append("g").selectAll("text").data(nodes).join("text")
+  .text(d => d.label)
+  .attr("font-size", 16)
+  .attr("font-family", "sans-serif")
+  .attr("font-weight", "bold") // optional, makes it bold
+  .attr("dx", 22)
+  .attr("dy", "0.35em")
+  .style("pointer-events", "none")
+  .style("display", d => {
+    if (searchType && searchValue) {
+      if (searchType === "process") {
+        return d.type === "process" ? "block" : "none"; 
+      } else {
+        return d.type === "protein" ? "block" : "none"; 
+      }
     }
+    return d.type === "process" ? "block" : "none";
+  })
+  .each(function(d) {
+    d.labelElement = d3.select(this); // store reference to label
   });
 
-  // Create simulation
+// Hover for blue/highlighted nodes
+node.on("mouseover", (event, d) => {
+  if (d3.select(event.currentTarget).attr("fill") === "#1f77b4") {
+    d.labelElement.style("display", "block"); // show label on hover
+  }
+}).on("mouseout", (event, d) => {
+  if (d3.select(event.currentTarget).attr("fill") === "#1f77b4") {
+    d.labelElement.style("display", "none"); // hide label after hover
+  }
+});
+
+  // Simulation
   const simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.id).distance(250))
     .force("charge", d3.forceManyBody().strength(-1000))
-    .force("center", d3.forceCenter(width / 2, height / 2));
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .on("tick", () => {
+      link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+      node.attr("cx", d => d.x).attr("cy", d => d.y);
+      label.attr("x", d => d.x).attr("y", d => d.y);
+    });
 
-  // Simulation tick
-  simulation.on("tick", () => {
-    link
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
+  // Drag functions
+  function dragstarted(event, d) { if (!event.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+  function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+  function dragended(event, d) { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }
 
-    node
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y);
-
-    label
-      .attr("x", d => d.x)
-      .attr("y", d => d.y);
-  });
-
-  // Dragging functions for nodes
-  function dragstarted(event, d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.fx = d.x;
-    d.fy = d.y;
-  }
-  function dragged(event, d) {
-    d.fx = event.x;
-    d.fy = event.y;
-  }
-  function dragended(event, d) {
-    if (!event.active) simulation.alphaTarget(0);
-    d.fx = null;
-    d.fy = null;
-  }
-
-  // Zoom handler
-  function zoomed(event) {
-    g.attr("transform", event.transform);
-  }
-
-  // Apply zoom behavior to the SVG, targeting the <g> group, allowing both wheel and drag gestures for pan/zoom.
-  // On Mac, this will allow two-finger pan and pinch zoom, as well as mouse wheel and drag background to pan.
-  svg.call(
-    d3.zoom()
-      .scaleExtent([0.1, 5])
-      .on("zoom", zoomed)
-  );
-
-  // Prevent node drag from propagating to zoom/pan (default d3.drag does this)
-  // But to be sure, stop propagation on node mousedown/touchstart
-  node.on("mousedown.zoom", event => event.stopPropagation())
-    .on("touchstart.zoom", event => event.stopPropagation());
+  // Zoom
+  svg.call(d3.zoom().scaleExtent([0.1,5]).on("zoom", event => g.attr("transform", event.transform)));
+  node.on("mousedown.zoom touchstart.zoom", event => event.stopPropagation());
 }
-
-
 
 // ---------- Master Render ----------
-function renderResults(results) {
+function renderResults(results, searchType = null, searchValue = null) {
   const displayMode = document.getElementById("displayMode").value;
 
+  // First, remove/hide anything currently displayed
+  const table = document.getElementById("resultsTable");
+  const chart = document.getElementById("chart");
+  const bubble = document.getElementById("bubble"); // if you have a bubble div
+
+  if (table) table.style.display = "none";
+  if (chart) chart.remove();
+  if (bubble) bubble.remove();
+
+  // Then render according to selected display mode
   if (displayMode === "table") renderTable(results);
-  else if (displayMode === "graph") renderGraph(results);
+  else if (displayMode === "graph") renderNetworkGraph(results, searchType, searchValue);
   else if (displayMode === "bubble") renderBubble(results);
 }
+
+// Automatically rerender or search when changing display mode
+document.getElementById("displayMode").addEventListener("change", () => {
+  const inputEl = document.getElementById("proteinInput");
+  const modeEl = document.getElementById("searchMode");
+
+  // If search input exists and has a value, trigger protein search
+  if (inputEl && modeEl && inputEl.value.trim() !== "") {
+    document.getElementById("SearchBtn").click(); // re-run search with current input
+  } else if (window.lastResults) {
+    // Otherwise just rerender the last fetched results
+    renderResults(window.lastResults);
+  }
+});
 
 
 
