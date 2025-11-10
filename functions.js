@@ -273,41 +273,40 @@ function renderNetworkGraph(results, searchType = null, searchValue = null) {
     .attr("stroke-width", 2);
 
   // Nodes
-const node = g.append("g")
-  .attr("stroke", "#fff")
-  .attr("stroke-width", 2)
-  .selectAll("circle").data(nodes).join("circle")
-  .attr("r", d => d.type === "protein" ? 25 : 18)
-  .attr("fill", d => {
+  const node = g.append("g")
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 2)
+    .selectAll("circle").data(nodes).join("circle")
+    .attr("r", d => d.type === "protein" ? 25 : 18)
+    .attr("fill", d => {
     if (searchType && searchValue) {
-      const searchLower = searchValue.toLowerCase();
-      const labelLower = d.label.toLowerCase();
+        const searchLower = searchValue.toLowerCase();
 
-      if (searchType === "process") {
-        // User searched for process -> highlight related proteins
-        if (d.type === "protein" && nodes.some(n => n.type === "process" && n.label.toLowerCase().includes(searchLower))) {
-          return "#1f77b4"; // blue = related proteins
-        } else {
-          return "#ff7f0e"; // orange = other nodes
+        if (searchType === "process") {
+            // User searched for a process → proteins related to it are blue
+            return d.type === "protein" &&
+                   nodes.some(n => n.type === "process" && n.label.toLowerCase().includes(searchLower))
+                   ? "#1f77b4"
+                   : "#ff7f0e";
+        } else if (searchType === "protein" || searchType === "uniprot") {
+            // User searched for a protein or UniProt → processes related to it are blue
+            return d.type === "process" &&
+                   nodes.some(n => n.type === "protein" &&
+                                   (n.label.toLowerCase().includes(searchLower) ||
+                                    (n.id && n.id.toLowerCase().includes(searchLower))))
+                   ? "#1f77b4"
+                   : "#ff7f0e";
         }
-      } else {
-        // User searched for protein / UniProt -> highlight related processes
-        if (d.type === "process" && nodes.some(n => n.type === "protein" && n.label.toLowerCase().includes(searchLower))) {
-          return "#1f77b4"; // blue = related processes
-        } else {
-          return "#ff7f0e"; // orange = other nodes
-        }
-      }
     }
 
-    // Default coloring if no search
+    // Default coloring
     return d.type === "protein" ? "#1f77b4" : "#ff7f0e";
-  })
-  .call(d3.drag()
-    .on("start", dragstarted)
-    .on("drag", dragged)
-    .on("end", dragended)
-  );
+})
+    .call(d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended)
+    );
 
   node.append("title").text(d => d.label);
 
@@ -316,43 +315,45 @@ const label = g.append("g").selectAll("text").data(nodes).join("text")
   .text(d => d.label)
   .attr("font-size", 16)
   .attr("font-family", "sans-serif")
-  .attr("font-weight", "bold") // optional, makes it bold
+  .attr("font-weight", "bold")
   .attr("dx", 22)
   .attr("dy", "0.35em")
   .style("pointer-events", "none")
   .style("display", d => {
     if (searchType && searchValue) {
-      if (searchType === "process") {
-        return d.type === "process" ? "block" : "none"; 
-      } else {
-        return d.type === "protein" ? "block" : "none"; 
+      const searchLower = searchValue.toLowerCase();
+      // Always show labels for nodes that match the search
+      if (d.label.toLowerCase().includes(searchLower) || 
+          (d.id && d.id.toLowerCase().includes(searchLower))) {
+        return "block";
       }
     }
-    return d.type === "process" ? "block" : "none";
+    return "none"; // hide by default
   })
   .each(function(d) {
-    d.labelElement = d3.select(this); // store reference to label
+    d.labelElement = d3.select(this);
   });
 
-// Hover for blue/highlighted nodes
+// Hover logic
 node.on("mouseover", (event, d) => {
-  if (d3.select(event.currentTarget).attr("fill") === "#1f77b4") {
-    d.labelElement.style("display", "block"); // show label on hover
-  }
+  d.labelElement.style("display", "block"); // show label on hover
 }).on("mouseout", (event, d) => {
-  if (d3.select(event.currentTarget).attr("fill") === "#1f77b4") {
-    d.labelElement.style("display", "none"); // hide label after hover
+  // Hide only if it doesn't match the search
+  const searchLower = searchValue ? searchValue.toLowerCase() : "";
+  if (!d.label.toLowerCase().includes(searchLower) &&
+      !(d.id && d.id.toLowerCase().includes(searchLower))) {
+    d.labelElement.style("display", "none");
   }
 });
 
   // Simulation
   const simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.id).distance(250))
-    .force("charge", d3.forceManyBody().strength(-1000))
+    .force("charge", d3.forceManyBody().strength(-2000))
     .force("center", d3.forceCenter(width / 2, height / 2))
     .on("tick", () => {
       link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-          .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+        .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
       node.attr("cx", d => d.x).attr("cy", d => d.y);
       label.attr("x", d => d.x).attr("y", d => d.y);
     });
@@ -363,7 +364,7 @@ node.on("mouseover", (event, d) => {
   function dragended(event, d) { if (!event.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }
 
   // Zoom
-  svg.call(d3.zoom().scaleExtent([0.1,5]).on("zoom", event => g.attr("transform", event.transform)));
+  svg.call(d3.zoom().scaleExtent([0.1, 5]).on("zoom", event => g.attr("transform", event.transform)));
   node.on("mousedown.zoom touchstart.zoom", event => event.stopPropagation());
 }
 
@@ -371,7 +372,12 @@ node.on("mouseover", (event, d) => {
 function renderResults(results, searchType = null, searchValue = null) {
   const displayMode = document.getElementById("displayMode").value;
 
-  // First, remove/hide anything currently displayed
+  // Treat UniProt search as a protein search for all downstream logic
+  if (searchType === "uniprot") {
+    searchType = "protein";
+  }
+
+  // Remove/hide anything currently displayed
   const table = document.getElementById("resultsTable");
   const chart = document.getElementById("chart");
   const bubble = document.getElementById("bubble"); // if you have a bubble div
@@ -402,5 +408,119 @@ document.getElementById("displayMode").addEventListener("change", () => {
 
 
 
+function renderBubble(results) {
+  // Prepare container
+  let bubbleDiv = document.getElementById("bubble");
+  if (!bubbleDiv) {
+    bubbleDiv = document.createElement("div");
+    bubbleDiv.id = "bubble";
+    document.body.appendChild(bubbleDiv);
+  } else {
+    bubbleDiv.innerHTML = "";
+  }
 
+  const width = window.innerWidth;
+  const height = window.innerHeight - window.innerHeight / 4;
+
+  // Aggregate counts of biological processes
+  const processCounts = d3.rollups(
+    results,
+    v => v.length,
+    d => d.biological_processLabel ? d.biological_processLabel.value : "Unknown Process"
+  );
+
+  const data = processCounts.map(([label, count]) => ({
+    label,
+    value: count
+  }));
+
+  // D3 bubble layout setup
+  const pack = d3.pack()
+    .size([width, height])
+    .padding(10);
+
+  const root = d3.hierarchy({ children: data })
+    .sum(d => d.value);
+
+  const nodes = pack(root).leaves();
+
+  // SVG setup
+  const svg = d3.select(bubbleDiv)
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .style("background", "#f9f9f9");
+
+  const g = svg.append("g");
+
+  // Define color scale
+  const color = d3.scaleSequential(d3.interpolateBlues)
+    .domain([0, d3.max(data, d => d.value)]);
+
+  // Draw circles
+  const circles = g.selectAll("circle")
+    .data(nodes)
+    .join("circle")
+    .attr("cx", d => d.x)
+    .attr("cy", d => d.y)
+    .attr("r", d => d.r)
+    .attr("fill", d => color(d.data.value))
+    .attr("stroke", "#333")
+    .attr("stroke-width", 1.5)
+    .style("cursor", "pointer")
+    .on("mouseover", function (event, d) {
+  d3.select(this).attr("stroke", "#000").attr("stroke-width", 3);
+
+  // Find all proteins/entries that belong to this biological process
+  const related = results
+    .filter(r => {
+      const label = r.biological_processLabel ? r.biological_processLabel.value : "Unknown Process";
+      return label === d.data.label;
+    })
+    .map(r => r.itemLabel ? r.itemLabel.value : "Unnamed protein"); // <-- changed here
+
+  // Create HTML list of protein names (limit to 15 for readability)
+  const listHTML = related
+    .slice(0, 15)
+    .map(p => `• ${p}`)
+    .join("<br/>");
+
+  const extra = related.length > 15 ? `<br/><em>and ${related.length - 15} more…</em>` : "";
+
+  tooltip.style("opacity", 1)
+    .html(`
+      <strong>${d.data.label}</strong><br/>
+      ${related.length} proteins:<br/>
+      ${listHTML}${extra}
+    `)
+    .style("left", event.pageX + 10 + "px")
+    .style("top", event.pageY - 20 + "px");
+})
+    .on("mousemove", function (event) {
+      tooltip.style("left", event.pageX + 10 + "px").style("top", event.pageY - 20 + "px");
+    })
+    .on("mouseout", function () {
+      d3.select(this).attr("stroke", "#333").attr("stroke-width", 1.5);
+      tooltip.style("opacity", 0);
+    });
+
+
+  // Tooltip
+  const tooltip = d3.select("body")
+    .append("div")
+    .style("position", "absolute")
+    .style("background", "#fff")
+    .style("padding", "6px 10px")
+    .style("border-radius", "6px")
+    .style("box-shadow", "0px 2px 6px rgba(0,0,0,0.2)")
+    .style("pointer-events", "none")
+    .style("opacity", 0);
+
+  // Zoom interaction
+  svg.call(
+    d3.zoom()
+      .scaleExtent([0.5, 5])
+      .on("zoom", event => g.attr("transform", event.transform))
+  );
+}
 
