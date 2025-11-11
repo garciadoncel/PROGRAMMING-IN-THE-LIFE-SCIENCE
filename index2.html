@@ -1,74 +1,40 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>   <!-- Specifying the document type (HTML)-->
+<html lang="en">    <!-- Setting the language of the document to English-->
+<head>        
+  <meta charset="UTF-8">    <!--UTF--8 is a text format that supports all characters-->
+  <title>Wikidata UniProt & Biological Processes</title>        <!--The text shown in the browser tab-->
+  <style>   /*Simply states how the page is going to look like (including colors, spacing...)*/
 
-<head>
-  <meta charset="UTF-8">
-  <title>Wikidata UniProt & Biological Processes</title>
-  <style>
-    body {
-      background-color: #a8f0e4;
-    }
-
-    table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-
-    th,
-    td {
-      border: 1px solid #999;
-      padding: 5px;
-      text-align: left;
-    }
-
-    th {
-      background-color: #47d099;
-    }
-
-    input {
-      margin-left: 5px;
-    }
-
-    a {
-      color: blue;
-    }
+    body {background-color: #a8f0e4;}   /* Backgroung color of the page is set to light blue */
+    table { border-collapse: collapse; width: 100%; }   /* It makes the table borders come together and use the full width */
+    th, td { border: 1px solid #999; padding: 5px; text-align: left; }    /* Adding grey borders, some space between cells and text that is left-alligned */ 
+    th { background-color: #47d099; }   /* The color the table headers will have (green) */
+    input { margin-left: 5px; }   /* Adds a small margin (space) to the left of imput boxes */ 
   </style>
 </head>
+<body>    <!--Everything visible on the page goes here-->
 
-<body>
+  <h1>Human Proteins and Biological Processes</h1>    <!--Title at the top of the page-->
 
-  <h1>Human Proteins and Biological Processes</h1>
+  <button id="fetchBtn">Run Query</button>    <!-- Button that runs the main query to get all proteins once clicked -->
 
-  <div style="display: flex; flex-direction: column; align-items: flex-start; margin-bottom: 1em;">
-    <label for="displayMode" style="margin-bottom: 0.3em;">Display as:</label>
-    <select id="displayMode" style="margin-bottom: 0.7em;">
-      <option value="table">Table</option>
-      <option value="graph">Network Graph</option>
-      <option value="bubble">Bubble chart</option>
-    </select>
-  </div>
-  <!-- Main button to fetch all human proteins -->
-  <button id="fetchBtn" style="margin-top: 0.3em;">Refresh Query</button>
-  <!-- Button to search a specific protein; hidden initially -->
-  <button id="SearchBtn" style="display: none;">Search Protein</button>
+  <button id="SearchBtn" style="display: none;">Search Protein</button>   <!--Button that lets you search for a specific protein-->
 
-  <!-- Table for results -->
-  <table id="resultsTable">
-    <thead style="display:none;">
-      <tr>
-        <th>Protein Label</th>
-        <th>UniProt ID</th>
-        <th>Biological Process</th>
-        <th>Biological Process Label</th>
+  <table id="resultsTable">   <!-- Table for results (displays the data you get from the query) -->
+    <thead style="display:none;">   <!--"thead" = top part of the table that holds the column titles, and it is hidden until data is loaded-->
+      <tr>    <!--Table row (contains the headers)-->
+        <th>Protein Label</th>    <!--Name of the protein-->
+        <th>UniProt ID</th>   <!--Proteins unique ID in the database of UniProt-->
+        <th>Biological Process</th>  <!--The ID link for the biological process the protein is involved in-->
+        <th>Biological Process Label</th> <!--Name of the biological process-->
       </tr>
     </thead>
-    <tbody></tbody>
+    <tbody></tbody>   <!-- "tbody"=the main body of the table where all the results will appear-->
   </table>
 
-
-  <!--Link external JavaScript -->
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="functions.js"></script>
+  
+<!--Link external JavaScript (It connects to an external JavaScript file which is called functions.js, that runs all the code to get and show the data)-->
+    <script src="functions.js"></script>
 </body>
 
 </html>
