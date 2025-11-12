@@ -728,6 +728,19 @@ function renderBubble(results) {
     });
 
 
+// Add text labels (number of proteins) inside each bubble
+g.selectAll("text")
+  .data(nodes)
+  .join("text")
+  .attr("x", d => d.x)
+  .attr("y", d => d.y)
+  .attr("text-anchor", "middle")
+  .attr("dy", "0.3em")
+  .style("font-size", d => Math.max(10, d.r / 3) + "px")
+  .style("fill", "white")
+  .style("pointer-events", "none")
+  .text(d => d.data.value);
+
   // Tooltip
   const tooltip = d3.select("body")
     .append("div")
