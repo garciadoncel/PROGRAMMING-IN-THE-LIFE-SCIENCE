@@ -50,7 +50,7 @@ const main_query = `
       LIMIT 1000
     `;
 
-// Create Query that finds all proteins that have a biological process with anatomical location "heart"
+// Create Query that finds all proteins that have a biological process with anatomical location "heart (Q1072)"
 const heart_query = `
     SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
         ?protein wdt:P31 wd:Q8054;
@@ -62,7 +62,7 @@ const heart_query = `
     }
     LIMIT 1000 
     `;
-// Create Query that finds all proteins that have a biological process with anatomical location "brain"
+// Create Query that finds all proteins that have a biological process with anatomical location "brain (Q1073)"
 const brain_query = `
     SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
         ?protein wdt:P31 wd:Q8054;
@@ -74,6 +74,135 @@ const brain_query = `
     }
     LIMIT 1000
     `;
+
+// Create Query for all proteins with a biological process with anatomical location "urinary bladder (Q9382)"
+const bladder_query =`
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q9382.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// Create Query for all proteins with a biological process with anatomical location "lung (Q7886)"
+const lung_query =`
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q7886.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// Create Query for all proteins with a biological process with anatomical location "thyroid gland (Q16399)"
+const thyroid_query = `
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q16399.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// Create Query for all proteins with biological process with anatomical location "mouth (Q9635)"
+const mouth_query =` 
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q9635.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// Create Query for all proteins with biological process with anatomical location "liver (Q9368)"
+const liver_query =`
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q9368.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// Create Query for all proteins with biological process with anatomical location "kidney (Q9377)"
+const kidney_query = `
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q9377.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// Create Query for all proteins with biological process with anatomical location "pancreas (Q9618)"
+const pancreas_query = `
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q9618.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// Create Query for all proteins with biological process with anatomical location "skeleton (Q7881)"
+const skeleton_query = `
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q7881.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// !!! using subclass of!!! Create query for all proteins with biologicall process that is a subclass of "digestion (Q11978)"
+const digestive_query = `
+SELECT ?protein ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P279*) wd:Q11978.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
+
+// Create Query for all proteins with biological process with anatomical location "gallbladder (Q64386)"
+const gallbladder_query = `
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
+    wdt:P352 ?uniprotID;
+    wdt:P682 ?biologicalProcess.
+  ?biologicalProcess (wdt:P927*) wd:Q64386.
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
+LIMIT 1000
+`;
 
 // Function to fetch data from Wikidata and populate the table
 // 'isSearch' indicates whether this is a search for a single protein
