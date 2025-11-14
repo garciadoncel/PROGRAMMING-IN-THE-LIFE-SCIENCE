@@ -24,14 +24,9 @@ export function renderBubble(results) {
     value: count
   }));
 
-  // D3 bubble layout setup
-  const pack = d3.pack()
-    .size([width, height])
-    .padding(10);
-
-  const root = d3.hierarchy({ children: data })
-    .sum(d => d.value);
-
+  // D3 bubble layout
+  const pack = d3.pack().size([width, height]).padding(10);
+  const root = d3.hierarchy({ children: data }).sum(d => d.value);
   const nodes = pack(root).leaves();
 
   // SVG setup
@@ -43,9 +38,9 @@ export function renderBubble(results) {
 
   const g = svg.append("g");
 
-  // Define color scale
+  // Improved color scale: darker for small bubbles
   const color = d3.scaleSequential(d3.interpolateBlues)
-    .domain([0, d3.max(data, d => d.value)]);
+    .domain([1, d3.max(data, d => d.value)]); // min=1 so small bubbles not too pale
 
   // Tooltip
   const tooltip = d3.select("body")
@@ -58,7 +53,7 @@ export function renderBubble(results) {
     .style("pointer-events", "none")
     .style("opacity", 0);
 
-  // Draw circles
+  // Draw bubbles
   const circles = g.selectAll("circle")
     .data(nodes)
     .join("circle")
@@ -84,7 +79,7 @@ export function renderBubble(results) {
         .style("left", event.pageX + 10 + "px")
         .style("top", event.pageY - 20 + "px");
     })
-    .on("mousemove", function(event) {
+    .on("mousemove", event => {
       tooltip.style("left", event.pageX + 10 + "px")
              .style("top", event.pageY - 20 + "px");
     })
@@ -93,11 +88,11 @@ export function renderBubble(results) {
       tooltip.style("opacity", 0);
     });
 
-  // Click handler to render table of proteins for this bubble
+  // Click to render table of proteins
   circles.on("click", function(event, d) {
     const related = results.filter(r => (r.biological_processLabel ? r.biological_processLabel.value : "Unknown Process") === d.data.label);
-
     let bubbleTable = document.getElementById("bubbleTable");
+
     if (!bubbleTable) {
       bubbleTable = document.createElement("table");
       bubbleTable.id = "bubbleTable";
@@ -141,7 +136,7 @@ export function renderBubble(results) {
     bubbleTable.scrollIntoView({ behavior: "smooth" });
   });
 
-  // Add text labels (number of proteins) inside each bubble
+  // Add text labels inside bubbles with dynamic color for readability
   g.selectAll("text")
     .data(nodes)
     .join("text")
@@ -150,14 +145,18 @@ export function renderBubble(results) {
     .attr("text-anchor", "middle")
     .attr("dy", "0.3em")
     .style("font-size", d => Math.max(10, d.r / 3) + "px")
-    .style("fill", "white")
     .style("pointer-events", "none")
-    .text(d => d.data.value);
+    .text(d => d.data.value)
+    .style("fill", d => {
+      // Invert color based on bubble brightness
+      const rgb = d3.color(color(d.data.value));
+      const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+      return brightness > 160 ? "#000" : "#fff";
+    });
 
-  // Zoom interaction
-  svg.call(
-    d3.zoom()
-      .scaleExtent([0.5, 5])
-      .on("zoom", event => g.attr("transform", event.transform))
+  // Zoom
+  svg.call(d3.zoom()
+    .scaleExtent([0.5, 5])
+    .on("zoom", event => g.attr("transform", event.transform))
   );
 }
