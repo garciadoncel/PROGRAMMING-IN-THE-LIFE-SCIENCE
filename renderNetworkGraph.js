@@ -91,11 +91,17 @@ const label = g.append("g").selectAll("text").data(nodes).join("text")
 
 // Hover logic: optional, can show labels for all on hover
 node.on("mouseover", (event, d) => {
-  d.labelElement.style("display", "block"); // show label on hover
-}).on("mouseout", (event, d) => {
-  // Hide only if not a blue node
-  if (searchType === "process" && d.type !== "process") d.labelElement.style("display", "none");
-  if ((searchType === "protein" || searchType === "uniprot") && d.type !== "protein") d.labelElement.style("display", "none");
+    // Show label on hover for all nodes
+    d.labelElement.style("display", "block");
+})
+.on("mouseout", (event, d) => {
+    // Determine if node is "blue" based on type and searchType
+    const isBlue = (searchType === "process" && d.type === "process") ||
+                   ((searchType === "protein" || searchType === "uniprot" || !searchType) && d.type === "protein");
+
+    if (!isBlue) {
+        d.labelElement.style("display", "none"); // hide orange nodes on mouseout
+    }
 });
 
 
