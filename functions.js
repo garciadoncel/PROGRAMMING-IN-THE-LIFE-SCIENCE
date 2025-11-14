@@ -450,9 +450,7 @@ function renderResults(results, searchType = null, searchValue = null) {
     );
   }
   else if (displayMode === "human") {
-    import("./renderHuman.js").then(module =>
-      module.renderHuman(results)
-    );
+    renderHuman(results); // call directly
   }
 }
 
