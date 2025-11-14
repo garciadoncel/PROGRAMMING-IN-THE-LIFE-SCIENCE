@@ -47,7 +47,7 @@ const main_query = `
         OPTIONAL { ?item wdt:P682 ?biological_process. }
         ?item wdt:P31 wd:Q8054.
       }
-      LIMIT 8000
+      LIMIT 5000
     `;
 
     //Create just one query for each organ, which can be generalised in short:
