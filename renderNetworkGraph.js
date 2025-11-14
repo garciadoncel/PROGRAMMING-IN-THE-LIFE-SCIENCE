@@ -1,4 +1,4 @@
-export function renderNetworkGraph(results, searchType = null, searchValue = null) {
+function renderNetworkGraph(results, searchType = null, searchValue = null) {
   // Get or create chart container
   let chartDiv = document.getElementById("chart");
   if (!chartDiv) {
