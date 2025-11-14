@@ -470,7 +470,3 @@ document.getElementById("displayMode").addEventListener("change", () => {
     renderResults(window.lastResults);
   }
 });
-
-
-
-

@@ -1,4 +1,4 @@
-function renderNetworkGraph(results, searchType = null, searchValue = null) {
+export function renderNetworkGraph(results, searchType = null, searchValue = null) {
   // Get or create chart container
   let chartDiv = document.getElementById("chart");
   if (!chartDiv) {
@@ -22,6 +22,7 @@ function renderNetworkGraph(results, searchType = null, searchValue = null) {
     const processLabel = d.biological_processLabel?.value || processId;
 
     if (proteinId && !nodesMap.has(proteinId)) nodesMap.set(proteinId, { id: proteinId, label: proteinLabel, type: "protein" });
+    if (proteinId && !nodesMap.has(proteinId)) nodesMap.set(proteinId, {id: proteinId, label: proteinLabel,  type: "protein"});
     if (processId && !nodesMap.has(processId)) nodesMap.set(processId, { id: processId, label: processLabel, type: "process" });
     if (proteinId && processId) links.push({ source: proteinId, target: processId });
   });
@@ -49,37 +50,23 @@ function renderNetworkGraph(results, searchType = null, searchValue = null) {
     .attr("stroke-width", 2)
     .selectAll("circle").data(nodes).join("circle")
     .attr("r", d => d.type === "protein" ? 25 : 18)
-    .attr("fill", d => {
-    if (searchType && searchValue) {
-        const searchLower = searchValue.toLowerCase();
-
-        if (searchType === "process") {
-            // User searched for a process → proteins related to it are blue
-            return d.type === "protein" &&
-                   nodes.some(n => n.type === "process" && n.label.toLowerCase().includes(searchLower))
-                   ? "#1f77b4"
-                   : "#ff7f0e";
-        } else if (searchType === "protein" || searchType === "uniprot") {
-            // User searched for a protein or UniProt → processes related to it are blue
-            return d.type === "process" &&
-                   nodes.some(n => n.type === "protein" &&
-                                   (n.label.toLowerCase().includes(searchLower) ||
-                                    (n.id && n.id.toLowerCase().includes(searchLower))))
-                   ? "#1f77b4"
-                   : "#ff7f0e";
-        }
+   .attr("fill", d => {
+    if (searchType === "process") {
+        // Searching by biological process → process nodes blue, proteins orange
+        return d.type === "process" ? "#1f77b4" : "#ff7f0e";
+    } else {
+        // Searching by protein name or UniProt → protein nodes blue, others orange
+        return d.type === "protein" ? "#1f77b4" : "#ff7f0e";
     }
-
-    // Default coloring
-    return d.type === "protein" ? "#1f77b4" : "#ff7f0e";
-})
-    .call(d3.drag()
-      .on("start", dragstarted)
-      .on("drag", dragged)
-      .on("end", dragended)
-    );
+  })
+  .call(d3.drag()
+    .on("start", dragstarted)
+    .on("drag", dragged)
+    .on("end", dragended)
+  );
 
   node.append("title").text(d => d.label);
+
 
 // Labels
 const label = g.append("g").selectAll("text").data(nodes).join("text")
@@ -91,32 +78,47 @@ const label = g.append("g").selectAll("text").data(nodes).join("text")
   .attr("dy", "0.35em")
   .style("pointer-events", "none")
   .style("display", d => {
-    if (searchType && searchValue) {
-      const searchLower = searchValue.toLowerCase();
-      // Always show labels for nodes that match the search
-      if (d.label.toLowerCase().includes(searchLower) || 
-          (d.id && d.id.toLowerCase().includes(searchLower))) {
-        return "block";
+      // Blue nodes always have labels visible
+      if (searchType === "process") {
+          return d.type === "process" ? "block" : "none";
+      } else {
+          return d.type === "protein" ? "block" : "none";
       }
-    }
-    return "none"; // hide by default
   })
   .each(function(d) {
-    d.labelElement = d3.select(this);
+      d.labelElement = d3.select(this);
   });
 
-// Hover logic
+// Hover logic: optional, can show labels for all on hover
 node.on("mouseover", (event, d) => {
   d.labelElement.style("display", "block"); // show label on hover
 }).on("mouseout", (event, d) => {
-  // Hide only if it doesn't match the search
-  const searchLower = searchValue ? searchValue.toLowerCase() : "";
-  if (!d.label.toLowerCase().includes(searchLower) &&
-      !(d.id && d.id.toLowerCase().includes(searchLower))) {
-    d.labelElement.style("display", "none");
-  }
+  // Hide only if not a blue node
+  if (searchType === "process" && d.type !== "process") d.labelElement.style("display", "none");
+  if ((searchType === "protein" || searchType === "uniprot") && d.type !== "protein") d.labelElement.style("display", "none");
 });
 
+
+node.on("click", (event, d) => {
+    // Determine the URL of the node
+    // If your 'id' is a full URL, use it directly
+    // Otherwise, you can construct a Wikidata link or UniProt link
+    let url = "";
+
+    if (d.id.startsWith("http")) {
+        url = d.id; // full URL
+    } else if (d.type === "protein") {
+        // Example: link to UniProt
+        url = `https://www.uniprot.org/uniprot/${d.id}`;
+    } else if (d.type === "process") {
+        // Example: link to Wikidata page
+        url = `https://www.wikidata.org/wiki/${d.id.split("/").pop()}`;
+    }
+
+    if (url) {
+        window.open(url, "_blank"); // open in a new tab
+    }
+});
   // Simulation
   const simulation = d3.forceSimulation(nodes)
     .force("link", d3.forceLink(links).id(d => d.id).distance(250))
