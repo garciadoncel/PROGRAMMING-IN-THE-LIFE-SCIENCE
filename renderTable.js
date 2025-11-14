@@ -29,3 +29,5 @@ export function renderTable(results) {
   });
   window.lastTableHTML = tbody.innerHTML;
 }
+
+
