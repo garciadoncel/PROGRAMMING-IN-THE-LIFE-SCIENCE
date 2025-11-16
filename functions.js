@@ -47,158 +47,48 @@ const main_query = `
         OPTIONAL { ?item wdt:P682 ?biological_process. }
         ?item wdt:P31 wd:Q8054.
       }
-      LIMIT 1000
+      LIMIT 5000
     `;
 
-// Create Query that finds all proteins that have a biological process with anatomical location "heart (Q1072)"
-const heart_query = `
-    SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-        ?protein wdt:P31 wd:Q8054;
-            wdt:P703 wd:Q15978631;
-            wdt:P352 ?uniprotID;
-            wdt:P682 ?biologicalProcess.
-        ?biologicalProcess (wdt:P927*) wd:Q1072.
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-    }
-    LIMIT 1000 
-    `;
-// Create Query that finds all proteins that have a biological process with anatomical location "brain (Q1073)"
-const brain_query = `
-    SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-        ?protein wdt:P31 wd:Q8054;
-            wdt:P703 wd:Q15978631;
-            wdt:P352 ?uniprotID;
-            wdt:P682 ?biologicalProcess.
-        ?biologicalProcess (wdt:P927*) wd:Q1073.
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-    }
-    LIMIT 1000
-    `;
+    //Create just one query for each organ, which can be generalised in short:
 
-// Create Query for all proteins with a biological process with anatomical location "urinary bladder (Q9382)"
-const bladder_query =`
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q9382.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
+
+//all organ queries have been generalized into a single function that takes organ QID as parameter(except digestive system query)
+const organ_query = (organQID) => `
+  SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+      ?protein wdt:P31 wd:Q8054;
+              wdt:P703 wd:Q15978631;
+              wdt:P352 ?uniprotID;
+              wdt:P682 ?biologicalProcess.
+      ?biologicalProcess (wdt:P927*) wd:${organQID}.
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+  }
+  LIMIT 1000
 `;
 
-// Create Query for all proteins with a biological process with anatomical location "lung (Q7886)"
-const lung_query =`
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q7886.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
+//every organ query created using the above function
+const heart_query  = organ_query("Q1072");
+const liver_query  = organ_query("Q9368"); 
+const brain_query  = organ_query("Q1073");
+const lung_query  = organ_query("Q7886");
+const kidney_query  = organ_query("Q9377");
+const thyroid_query  = organ_query("Q16399");
+const mouth_query  = organ_query("Q9635");
+const bladder_query  = organ_query("Q9382");
+const pancreas_query  = organ_query("Q9618");
+const skeleton_query  = organ_query("Q7881");
+const gallbladder_query  = organ_query("Q64386");
 
-// Create Query for all proteins with a biological process with anatomical location "thyroid gland (Q16399)"
-const thyroid_query = `
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q16399.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
 
-// Create Query for all proteins with biological process with anatomical location "mouth (Q9635)"
-const mouth_query =` 
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q9635.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
-
-// Create Query for all proteins with biological process with anatomical location "liver (Q9368)"
-const liver_query =`
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q9368.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
-
-// Create Query for all proteins with biological process with anatomical location "kidney (Q9377)"
-const kidney_query = `
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q9377.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
-
-// Create Query for all proteins with biological process with anatomical location "pancreas (Q9618)"
-const pancreas_query = `
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q9618.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
-
-// Create Query for all proteins with biological process with anatomical location "skeleton (Q7881)"
-const skeleton_query = `
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q7881.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
-
-// !!! using subclass of!!! Create query for all proteins with biologicall process that is a subclass of "digestion (Q11978)"
+// !!! using subclass of!!! Create query for all proteins with 
+// biologicall process that is a subclass of "digestion (Q11978)"
 const digestive_query = `
-SELECT ?protein ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P703 wd:Q15978631;
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
     wdt:P352 ?uniprotID;
     wdt:P682 ?biologicalProcess.
   ?biologicalProcess (wdt:P279*) wd:Q11978.
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-LIMIT 1000
-`;
-
-// Create Query for all proteins with biological process with anatomical location "gallbladder (Q64386)"
-const gallbladder_query = `
-SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P31 wd:Q8054;
-    wdt:P703 wd:Q15978631;
-    wdt:P352 ?uniprotID;
-    wdt:P682 ?biologicalProcess.
-  ?biologicalProcess (wdt:P927*) wd:Q64386.
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }
 LIMIT 1000
@@ -576,6 +466,15 @@ function renderHuman(results) {
     const organs = [
         { id: "brain", label: "Brain", xPct: 0.50, yPct: 0.07, rPct: 0.03, query: brain_query },
         { id: "heart", label: "Heart", xPct: 0.50, yPct: 0.44, rPct: 0.025, query: heart_query },
+        { id: "lung", label: "Lungs", xPct: 0.40, yPct: 0.44, rPct: 0.025, query: lung_query },
+        { id: "liver", label: "Liver", xPct: 0.40, yPct: 0.525, rPct: 0.025, query: liver_query },
+        { id: "kidney", label: "Kidneys", xPct: 0.53, yPct: 0.61, rPct: 0.015, query: kidney_query },
+        { id: "thyroid", label: "Thyroid", xPct: 0.4875, yPct: 0.26, rPct: 0.01, query: thyroid_query },
+        { id: "mouth", label: "Mouth", xPct: 0.385, yPct: 0.185, rPct: 0.01, query: mouth_query },
+        { id: "bladder", label: "Bladder", xPct: 0.49, yPct: 0.85, rPct: 0.01, query: bladder_query },
+        { id: "pancreas", label: "Pancreas", xPct: 0.48, yPct: 0.53, rPct: 0.015, query: pancreas_query },
+        { id: "gallbladder", label: "Gallbladder", xPct: 0.41, yPct: 0.57, rPct: 0.01, query: gallbladder_query },
+        { id: "digestive", label: "Digestive System", xPct: 0.4875, yPct: 0.73, rPct: 0.045, query: digestive_query },
         // add more organs using percentage coords, e.g.
     ];
 
@@ -609,13 +508,16 @@ function renderHuman(results) {
             .attr("data-organ", o.id)
             .style("cursor", "pointer");
 
-        // small label under the overlay
+        // small label under the overlay (make it more visible / bold)
         svg.append("text")
             .attr("x", cx)
             .attr("y", cy + r + 14)
             .attr("text-anchor", "middle")
-            .attr("font-size", 12)
-            .attr("fill", "#666")
+            .attr("font-family", "sans-serif")
+            .attr("font-weight", "700")        // bold
+            .attr("font-size", 13)            // slightly larger
+            .attr("fill", "#333")             // darker color
+            .attr("pointer-events", "none")   // ignore mouse events
             .text(o.label);
     });
 
