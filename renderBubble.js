@@ -1,4 +1,4 @@
-export function renderBubble(results) {
+function renderBubble(results) {
   // Prepare container
   let bubbleDiv = document.getElementById("bubble");
   if (!bubbleDiv) {

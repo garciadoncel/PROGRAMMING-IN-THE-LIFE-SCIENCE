@@ -1,5 +1,5 @@
 // Render table format
-export function renderTable(results) {
+function renderTable(results) {
   const table = document.getElementById("resultsTable");
   const tbody = table.querySelector("tbody");
 

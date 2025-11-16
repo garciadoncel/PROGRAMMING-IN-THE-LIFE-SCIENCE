@@ -1,4 +1,4 @@
-export function renderNetworkGraph(results, searchType = null, searchValue = null) {
+function renderNetworkGraph(results, searchType = null, searchValue = null) {
   // Get or create chart container
   let chartDiv = document.getElementById("chart");
   if (!chartDiv) {
@@ -22,7 +22,6 @@ export function renderNetworkGraph(results, searchType = null, searchValue = nul
     const processLabel = d.biological_processLabel?.value || processId;
 
     if (proteinId && !nodesMap.has(proteinId)) nodesMap.set(proteinId, { id: proteinId, label: proteinLabel, type: "protein" });
-    if (proteinId && !nodesMap.has(proteinId)) nodesMap.set(proteinId, {id: proteinId, label: proteinLabel,  type: "protein"});
     if (processId && !nodesMap.has(processId)) nodesMap.set(processId, { id: processId, label: processLabel, type: "process" });
     if (proteinId && processId) links.push({ source: proteinId, target: processId });
   });
