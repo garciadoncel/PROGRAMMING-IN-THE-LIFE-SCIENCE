@@ -83,8 +83,9 @@ const gallbladder_query  = organ_query("Q64386");
 // !!! using subclass of!!! Create query for all proteins with 
 // biologicall process that is a subclass of "digestion (Q11978)"
 const digestive_query = `
-SELECT ?protein ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-  ?protein wdt:P703 wd:Q15978631;
+SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
+  ?protein wdt:P31 wd:Q8054;
+    wdt:P703 wd:Q15978631;
     wdt:P352 ?uniprotID;
     wdt:P682 ?biologicalProcess.
   ?biologicalProcess (wdt:P279*) wd:Q11978.
