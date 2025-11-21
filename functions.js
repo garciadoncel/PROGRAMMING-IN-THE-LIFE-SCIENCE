@@ -68,6 +68,8 @@ const main_query = `
 // 'isSearch' indicates whether this is a search for a single protein
 // 'proteinName' is used for display at the top of search results
 async function fetchData(query, isSearch = false, searchValue = "") {
+  showThrobber(); // Show throbber while loading
+
   const url = endpoint + "?query=" + encodeURIComponent(query);
   const response = await fetch(url, {
     headers: { 'Accept': 'application/sparql-results+json' }
@@ -82,6 +84,8 @@ async function fetchData(query, isSearch = false, searchValue = "") {
     const modeEl = document.getElementById("searchMode");
     searchType = modeEl ? modeEl.value : null;
   }
+
+  hideThrobber(); // Hide throbber after loading
 
   renderResults(results, searchType, searchValue);
 }
@@ -252,3 +256,29 @@ document.getElementById("displayMode").addEventListener("change", () => {
     renderResults(window.lastResults);
   }
 });
+
+// Helper to show the throbber spinner
+function showThrobber() {
+  let throbber = document.getElementById("throbber");
+  if (!throbber) {
+    throbber = document.createElement("div");
+    throbber.id = "throbber";
+    throbber.style.textAlign = "center";
+    throbber.style.margin = "1.5rem 0";
+    throbber.innerHTML = `<img src="assets/throbber.gif" alt="Loading..." style="width:48px;height:48px;">`;
+    // Insert above results table
+    const resultsTable = document.getElementById("resultsTable");
+    if (resultsTable && resultsTable.parentNode) {
+      resultsTable.parentNode.insertBefore(throbber, resultsTable);
+    } else {
+      document.body.appendChild(throbber);
+    }
+  }
+  throbber.style.display = "block";
+}
+
+// Helper to hide the throbber spinner
+function hideThrobber() {
+  const throbber = document.getElementById("throbber");
+  if (throbber) throbber.style.display = "none";
+}
