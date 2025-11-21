@@ -51,13 +51,14 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
 
 // Query to fetch all human proteins and their biological processes
 const main_query = `
-      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
-        ?item wdt:P352 ?uniprotid;
-              wdt:P703 wd:Q15978631.
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-        OPTIONAL { ?item wdt:P682 ?biological_process. }
-        ?item wdt:P31 wd:Q8054.
-      }
+      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel 
+        WHERE {
+          ?item wdt:P352 ?uniprotid;
+                wdt:P703 wd:Q15978631.
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+          OPTIONAL { ?item wdt:P682 ?biological_process. }
+          ?item wdt:P31 wd:Q8054.
+        }
       LIMIT 5000
     `;
 
