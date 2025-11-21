@@ -185,21 +185,25 @@ function createProteinSearchQuery(name, mode) {
     return `
     SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel 
         WHERE {
-          ?item wdt:P31 wd:Q8054;             # any item--instance of--protein
-                wdt:P703 wd:Q15978631;        # (any item)--found in taxon--Homo sapiens 
-                wdt:P682 ?biological_process. # (any item)--biological process--corresponding biological process
-          OPTIONAL { ?item wdt:P352 ?uniprotid. }  # optionally include any item--UniProt protein ID--corresponding UniProtID
-
+    
           SERVICE wikibase:mwapi {    # use a wikidata service to handle searching for strings. 
-          bd:serviceParam wikibase:endpoint "www.wikidata.org";
-          wikibase:api "Search";
-          mwapi:srsearch "${name} haswbstatement:P31";
-          mwapi:srlimit "max".
-          ?item wikibase:apiOutputItem mwapi:title.
-      }
-        # The output of the search service also includes entries that have the input {name} in their Alias
+            bd:serviceParam wikibase:endpoint "www.wikidata.org";
+            wikibase:api "Search";
+            mwapi:srsearch "${name} haswbstatement:P31";
+            mwapi:srlimit "max".
+            ?biological_process wikibase:apiOutputItem mwapi:title.
+          # The output of the search service also includes entries that have the input {name} in their Alias
+          # This service must happen before the rest of the query
+          # -> Otherwise the biological process found by the query would overrule the ?biological_process the user inputted
+          }
+
+          ?item wdt:P682 ?biological_process; # any item--biological process--corresponding biological process
+                wdt:P703 wd:Q15978631;        # (any item)--found in taxon--Homo sapiens 
+                wdt:P31 wd:Q8054.             # (any item)--instance of--protein
+          
+                OPTIONAL { ?item wdt:P352 ?uniprotid. }  # optionally include any item--UniProt protein ID--corresponding UniProtID
         
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
       }
       LIMIT 200
     `;
