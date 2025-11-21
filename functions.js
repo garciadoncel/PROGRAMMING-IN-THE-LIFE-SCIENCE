@@ -139,46 +139,62 @@ function escapeForSPARQL(s) {
 // Build SPARQL query for searching proteins
 function createProteinSearchQuery(name, mode) {
   name = escapeForSPARQL(name);
-
+//There are three modes for different input types:
+//  "name" (for proteins) "uniprot" (for uniprot IDs), "process" (for biological processes)
   if (mode === "name") {
     return `
-      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
-        ?item wdt:P31 wd:Q8054;
-              wdt:P703 wd:Q15978631.
-        OPTIONAL { ?item wdt:P352 ?uniprotid. }
-        OPTIONAL { ?item wdt:P682 ?biological_process. }
-        ?item rdfs:label ?itemLabel .
-        FILTER(LANG(?itemLabel) = "en")
-        FILTER(CONTAINS(LCASE(STR(?itemLabel)), LCASE("${name}")))
-        OPTIONAL {
-          ?biological_process rdfs:label ?biological_processLabel .
-          FILTER(LANG(?biological_processLabel) = "en")
-        }
+    SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel   # include all these variables in output
+      WHERE {
+        ?item wdt:P31 wd:Q8054;       # any item--instance of--protein
+              wdt:P703 wd:Q15978631.  # (any item)--found in taxon--Homo sapiens
+        OPTIONAL { ?item wdt:P352 ?uniprotid. }   # optionally include any item--UniProt protein ID--corresponding UniProtID
+        OPTIONAL { ?item wdt:P682 ?biological_process. }  # optionally include any item--biological process--corresponding biological process
+
+        SERVICE wikibase:mwapi {    # use a media wiki api service to handle searching for strings. 
+        bd:serviceParam wikibase:endpoint "www.wikidata.org";
+        wikibase:api "Search";
+        mwapi:srsearch "${name} haswbstatement:P703";
+        mwapi:srlimit "max".
+        ?item wikibase:apiOutputItem mwapi:title.
+      }
+        # The output of the search service also includes entries that have the input {name} in their Alias
+        
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
       }
       LIMIT 200
     `;
   } else if (mode === "uniprot") {
     return `
-      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
-        ?item wdt:P352 "${name}";
-              wdt:P703 wd:Q15978631.
-        OPTIONAL { ?item wdt:P352 ?uniprotid. }
-        OPTIONAL { ?item wdt:P682 ?biological_process. }
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+    SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel 
+      WHERE {
+        ?item wdt:P352 "${name}";    # item--UniProt protein ID--{UniprotID user input}
+              wdt:P703 wd:Q15978631. # (any item)--found in taxon--Homo sapiens 
+        OPTIONAL { ?item wdt:P352 ?uniprotid. }   # optionally include any item--UniProt protein ID--corresponding UniProtID
+        OPTIONAL { ?item wdt:P682 ?biological_process. }  # optionally include any item--biological process--corresponding biological process
+
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }  # binds all variables (Q numbers) to an English Language Label
       }
       LIMIT 50
     `;
   } else if (mode === "process") {
     return `
-      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
-        ?item wdt:P31 wd:Q8054;
-              wdt:P703 wd:Q15978631;
-              wdt:P682 ?biological_process.
-        OPTIONAL { ?item wdt:P352 ?uniprotid. }
-        ?biological_process rdfs:label ?biological_processLabel .
-        FILTER(LANG(?biological_processLabel) = "en")
-        FILTER(CONTAINS(LCASE(STR(?biological_processLabel)), LCASE("${name}")))
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+    SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel 
+        WHERE {
+          ?item wdt:P31 wd:Q8054;             # any item--instance of--protein
+                wdt:P703 wd:Q15978631;        # (any item)--found in taxon--Homo sapiens 
+                wdt:P682 ?biological_process. # (any item)--biological process--corresponding biological process
+          OPTIONAL { ?item wdt:P352 ?uniprotid. }  # optionally include any item--UniProt protein ID--corresponding UniProtID
+
+          SERVICE wikibase:mwapi {    # use a wikidata service to handle searching for strings. 
+          bd:serviceParam wikibase:endpoint "www.wikidata.org";
+          wikibase:api "Search";
+          mwapi:srsearch "${name} haswbstatement:P31";
+          mwapi:srlimit "max".
+          ?item wikibase:apiOutputItem mwapi:title.
+      }
+        # The output of the search service also includes entries that have the input {name} in their Alias
+        
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
       }
       LIMIT 200
     `;
