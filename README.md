@@ -19,4 +19,11 @@ A **search bar** allows queries by protein name, protein ID or biological proces
 test line
 
 
+each file has their own utilty:
+    1. function.js bla bla bla
+    bal bla bla
+    ..........
+    
+
+
 

@@ -5,6 +5,17 @@ window.addEventListener("DOMContentLoaded", () => {
   document.getElementById("fetchBtn").click();
 });
 
+
+// Lightweight helper to run a SPARQL query and return bindings (does not re-render UI)
+async function fetchSparql(query) {
+    const url = endpoint + "?query=" + encodeURIComponent(query);
+    const resp = await fetch(url, { headers: { 'Accept': 'application/sparql-results+json' } });
+    if (!resp.ok) throw new Error(`SPARQL error: ${resp.status}`);
+    const data = await resp.json();
+    return data.results?.bindings || [];
+}
+
+
 // Run a protein search when clicking "Search Protein" button
 document.getElementById("SearchBtn").addEventListener("click", () => {
   const inputEl = document.getElementById("proteinInput");
@@ -40,7 +51,7 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
 
 // Query to fetch all human proteins and their biological processes
 const main_query = `
-      SELECT ?item ?uniprotid ?tax_node ?biological_process ?biological_processLabel ?itemLabel WHERE {
+      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel WHERE {
         ?item wdt:P352 ?uniprotid;
               wdt:P703 wd:Q15978631.
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
@@ -50,14 +61,6 @@ const main_query = `
       LIMIT 5000
     `;
 
-// Lightweight helper to run a SPARQL query and return bindings (does not re-render UI)
-async function fetchSparql(query) {
-    const url = endpoint + "?query=" + encodeURIComponent(query);
-    const resp = await fetch(url, { headers: { 'Accept': 'application/sparql-results+json' } });
-    if (!resp.ok) throw new Error(`SPARQL error: ${resp.status}`);
-    const data = await resp.json();
-    return data.results?.bindings || [];
-}
 
 
 // Function to fetch data from Wikidata and populate the table
@@ -121,6 +124,11 @@ function createSearchUI() {
 }
 
 // Escape user input to safely include in SPARQL query (security against injection)
+//makes sure there will be none of \, " or newlines in the input
+// Replaces \ with \\, " with \", and newlines with spaces
+// Returns the escaped string
+// If input is null or undefined, returns an empty string
+// This function helps prevent SPARQL injection attacks
 function escapeForSPARQL(s) {
   if (!s) return "";
   return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, " ");
