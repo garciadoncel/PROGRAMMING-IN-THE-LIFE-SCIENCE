@@ -5,15 +5,17 @@ async function renderHuman(results, deps = {}) {
     // Path to the human body image
     const bodyImgPath = deps.bodyImgPath || "assets/body.png";
 
-    // Organ query builder - creates SPARQL queries for specific organs
+    // Organ query builder - creates SPARQL queries for specific organs.
     const organ_query = (organQID) => `
-      SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-          ?protein wdt:P31 wd:Q8054;
-                  wdt:P703 wd:Q15978631;
-                  wdt:P352 ?uniprotID;
-                  wdt:P682 ?biologicalProcess.
-          ?biologicalProcess (wdt:P927*) wd:${organQID}.
-          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel       # include all these variables in output (aka "only pull this information from wikidata")
+        WHERE {
+          ?protein wdt:P31 wd:Q8054;             # any item--instance of-- protein.                                    Item must be a protein
+                   wdt:P703 wd:Q15978631;        # (any item)--found in taxon--Homo sapiens.                           Item must be found in humans
+                   wdt:P352 ?uniprotID;          # any item--UniProt protein ID--corresponding UniProt ID.             Item must have a UniProtID (any ID)
+                   wdt:P682 ?biologicalProcess.  # any item--biological process--corresponding biological process.     Item must have a biological process (any biological process)
+          ?biologicalProcess (wdt:P927*) wd:${organQID}. # any biological process--anatomical location--{input organ}. Biological process of the item must be connected by 0 or more steps of "anatomical location" (P927) to the input organ
+
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }        # binds all variables (Q numbers) to an English Language Label
       }
       LIMIT 1000
     `;
@@ -30,15 +32,18 @@ async function renderHuman(results, deps = {}) {
     const pancreas_query = organ_query("Q9618");
     const gallbladder_query = organ_query("Q64386");
 
-    // Digestive system uses subclass relationship instead of anatomical location
+    // Digestive system uses subclass relationship instead of anatomical location.
+    // This query is indentical to organ_query, with the small difference of P927 (anatomical location) --> P279 (subclass of). and taking "digestion" (Q11978) as input
     const digestive_query = `
-      SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel WHERE {
-        ?protein wdt:P31 wd:Q8054;
-          wdt:P703 wd:Q15978631;
-          wdt:P352 ?uniprotID;
-          wdt:P682 ?biologicalProcess.
-        ?biologicalProcess (wdt:P279*) wd:Q11978.
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+      SELECT ?protein ?proteinLabel ?uniprotID ?biologicalProcess ?biologicalProcessLabel   # include all these variables in output
+        WHERE {
+            ?protein wdt:P31 wd:Q8054;                # any item--instance of-- protein.                                 Item must be a protein
+                     wdt:P703 wd:Q15978631;           # (any item)--found in taxon--Homo sapiens.                        Item must be found in humans
+                     wdt:P352 ?uniprotID;             # any item--UniProt protein ID--corresponding UniProt ID.          Item must have a UniProtID (any ID)
+                     wdt:P682 ?biologicalProcess.     # any item--biological process--corresponding biological process.  Item must have a biological process (any biological process)
+            ?biologicalProcess (wdt:P279*) wd:Q11978. # any biological process--subclass of--digestion.                  Biological process of the item must be connected by 0 or more steps of "subclass of" (P279) to Q11978 ("digestion")
+
+        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }      # binds all variables (Q numbers) to an English Language Label
       }
       LIMIT 1000
     `;

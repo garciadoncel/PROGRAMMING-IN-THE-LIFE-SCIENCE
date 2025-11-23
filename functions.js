@@ -51,13 +51,15 @@ document.getElementById("fetchBtn").addEventListener("click", () => {
 
 // Query to fetch all human proteins and their biological processes
 const main_query = `
-      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel 
+      SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel   # include all these variables in output (aka "only pull this information from wikidata")
         WHERE {
-          ?item wdt:P352 ?uniprotid;
-                wdt:P703 wd:Q15978631.
-          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-          OPTIONAL { ?item wdt:P682 ?biological_process. }
-          ?item wdt:P31 wd:Q8054.
+          ?item wdt:P352 ?uniprotid;                        # any item--UniProt protein ID--corresponding UniProt ID.            Item must have a UniProtID
+                wdt:P703 wd:Q15978631.                      # (any item)--found in taxon--Homo sapiens.                          Item must be found in humans
+
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }   # binds all variables (Q numbers) to an English Language Label (In other words, define itemLabel and biological_processLabel)
+
+          OPTIONAL { ?item wdt:P682 ?biological_process. }  # any item--biological process--corresponding biological process.    If the item doesn't have a biological process, still include it
+          ?item wdt:P31 wd:Q8054.                           # any item--instance of-- protein.                                   Item must be a protein
         }
       LIMIT 5000
     `;
@@ -150,19 +152,19 @@ function createProteinSearchQuery(name, mode) {
     return `
     SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel   # include all these variables in output
       WHERE {
-        ?item wdt:P31 wd:Q8054;       # any item--instance of--protein
-              wdt:P703 wd:Q15978631.  # (any item)--found in taxon--Homo sapiens
-        OPTIONAL { ?item wdt:P352 ?uniprotid. }   # optionally include any item--UniProt protein ID--corresponding UniProtID
-        OPTIONAL { ?item wdt:P682 ?biological_process. }  # optionally include any item--biological process--corresponding biological process
+        ?item wdt:P31 wd:Q8054;                           # any item--instance of--protein.                                                    Item must be a protein
+              wdt:P703 wd:Q15978631.                      # (any item)--found in taxon--Homo sapiens.                                          Item must be found in humans
+        OPTIONAL { ?item wdt:P352 ?uniprotid. }           # optionally include any item--UniProt protein ID--corresponding UniProtID.          Item can have a UniProtID, still include items that don't
+        OPTIONAL { ?item wdt:P682 ?biological_process. }  # optionally include any item--biological process--corresponding biological process. Item can have a biological process, still include items that don't
 
-        SERVICE wikibase:mwapi {    # use a media wiki api service to handle searching for strings. 
+        SERVICE wikibase:mwapi {                          # use a mediawiki api service to handle searching for strings. 
         bd:serviceParam wikibase:endpoint "www.wikidata.org";
         wikibase:api "Search";
-        mwapi:srsearch "${name} haswbstatement:P703";
+        mwapi:srsearch "${name} haswbstatement:P703";     # protein must have property P703 "found in taxon". This optimises the search by excluding/ignoring all items that do not have this property
         mwapi:srlimit "max".
         ?item wikibase:apiOutputItem mwapi:title.
       }
-        # The output of the search service also includes entries that have the input {name} in their Alias
+        # Note: The output of the mwapi search service also includes entries that have the input {name} in their Alias
         
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
       }
@@ -170,12 +172,12 @@ function createProteinSearchQuery(name, mode) {
     `;
   } else if (mode === "uniprot") {
     return `
-    SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel 
+    SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel   # include all these variables in output
       WHERE {
-        ?item wdt:P352 "${name}";    # item--UniProt protein ID--{UniprotID user input}
-              wdt:P703 wd:Q15978631. # (any item)--found in taxon--Homo sapiens 
-        OPTIONAL { ?item wdt:P352 ?uniprotid. }   # optionally include any item--UniProt protein ID--corresponding UniProtID
-        OPTIONAL { ?item wdt:P682 ?biological_process. }  # optionally include any item--biological process--corresponding biological process
+        ?item wdt:P352 "${name}";                         # item--UniProt protein ID--{UniprotID user input}.                                  Item must have input UniProtID
+              wdt:P703 wd:Q15978631.                      # (any item)--found in taxon--Homo sapiens.                                          Item must be found in humans          
+        OPTIONAL { ?item wdt:P352 ?uniprotid. }           # optionally include any item--UniProt protein ID--corresponding UniProtID.          Item can have a UniProtID, still include items that don't 
+        OPTIONAL { ?item wdt:P682 ?biological_process. }  # optionally include any item--biological process--corresponding biological process. Item can have a biological process, still include items that don't
 
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }  # binds all variables (Q numbers) to an English Language Label
       }
@@ -183,27 +185,27 @@ function createProteinSearchQuery(name, mode) {
     `;
   } else if (mode === "process") {
     return `
-    SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel 
+    SELECT ?item ?uniprotid ?biological_process ?biological_processLabel ?itemLabel   # include all these variables in output
         WHERE {
     
-          SERVICE wikibase:mwapi {    # use a wikidata service to handle searching for strings. 
+          SERVICE wikibase:mwapi {                         # use a wikidata service to handle searching for strings. 
             bd:serviceParam wikibase:endpoint "www.wikidata.org";
             wikibase:api "Search";
             mwapi:srsearch "${name} haswbstatement:P31";
             mwapi:srlimit "max".
             ?biological_process wikibase:apiOutputItem mwapi:title.
+          }
           # The output of the search service also includes entries that have the input {name} in their Alias
           # This service must happen before the rest of the query
           # -> Otherwise the biological process found by the query would overrule the ?biological_process the user inputted
-          }
 
-          ?item wdt:P682 ?biological_process; # any item--biological process--corresponding biological process
-                wdt:P703 wd:Q15978631;        # (any item)--found in taxon--Homo sapiens 
-                wdt:P31 wd:Q8054.             # (any item)--instance of--protein
+          ?item wdt:P682 ?biological_process;            # any item--biological process--corresponding biological process  Item must have a biological process
+                wdt:P703 wd:Q15978631;                   # (any item)--found in taxon--Homo sapiens.                       Item must be found in humans 
+                wdt:P31 wd:Q8054.                        # (any item)--instance of--protein.                               Item must be a protein
           
-                OPTIONAL { ?item wdt:P352 ?uniprotid. }  # optionally include any item--UniProt protein ID--corresponding UniProtID
+                OPTIONAL { ?item wdt:P352 ?uniprotid. }  # optionally include any item--UniProt protein ID--corresponding UniProtID.  If the item doesn't have a UniProt ID, still include it
         
-        SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
+          SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
       }
       LIMIT 200
     `;
