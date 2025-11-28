@@ -329,6 +329,3 @@ async function renderHuman(results, deps = {}) {
     // Store reference on chartDiv so it can be removed later if needed
     chartDiv._organDocClickHandler = organDocClickHandler;
 }
-
-// Export the function so it can be imported by other modules
-export { renderHuman };
