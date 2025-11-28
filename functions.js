@@ -29,7 +29,7 @@ document.getElementById("SearchBtn").addEventListener("click", () => {
   if (!raw) return alert("Please enter a protein name or ID!");
 
   const searchQuery = createProteinSearchQuery(raw, modeEl.value);
-  fetchData(searchQuery, true, raw); // <-- searchValue passed here
+  fetchData(searchQuery, true, raw);
 });
 
 // Run the main query when clicking "Run Query" button
@@ -69,7 +69,7 @@ const main_query = `
 // Function to fetch data from Wikidata and populate the table
 // 'isSearch' indicates whether this is a search for a single protein
 // 'proteinName' is used for display at the top of search results
-async function fetchData(query, isSearch = false, searchValue = "") {
+async function fetchData(query, isSearch = false) {
   showThrobber(); // Show throbber while loading
 
   const url = endpoint + "?query=" + encodeURIComponent(query);
@@ -89,7 +89,7 @@ async function fetchData(query, isSearch = false, searchValue = "") {
 
   hideThrobber(); // Hide throbber after loading
 
-  renderResults(results, searchType, searchValue);
+  renderResults(results, searchType);
 }
 
 
@@ -212,7 +212,7 @@ function createProteinSearchQuery(name, mode) {
   }
 }
 
-function renderResults(results, searchType = null, searchValue = null) {
+function renderResults(results, searchType = null) {
   const displayMode = document.getElementById("displayMode").value;
 
   if (searchType === "uniprot") {
@@ -238,7 +238,7 @@ function renderResults(results, searchType = null, searchValue = null) {
     renderTable(results);
   }
   else if (displayMode === "graph") {
-    renderNetworkGraph(results, searchType, searchValue);
+    renderNetworkGraph(results, searchType);
   }
   else if (displayMode === "bubble") {
     renderBubble(results);
