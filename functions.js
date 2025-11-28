@@ -61,7 +61,7 @@ const main_query = `
           OPTIONAL { ?item wdt:P682 ?biological_process. }  # any item--biological process--corresponding biological process.    If the item doesn't have a biological process, still include it
           ?item wdt:P31 wd:Q8054.                           # any item--instance of-- protein.                                   Item must be a protein
         }
-      LIMIT 5000
+      LIMIT 5000     #not all data is used because it takes too long to run it
     `;
 
 
@@ -168,7 +168,7 @@ function createProteinSearchQuery(name, mode) {
         
       SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
       }
-      LIMIT 200
+      #LIMIT 200          #the limit is commented out to allow for larger result sets(full sets, without excluding data).
     `;
   } else if (mode === "uniprot") {
     return `
@@ -181,7 +181,6 @@ function createProteinSearchQuery(name, mode) {
 
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }  # binds all variables (Q numbers) to an English Language Label
       }
-      LIMIT 50
     `;
   } else if (mode === "process") {
     return `
@@ -207,7 +206,6 @@ function createProteinSearchQuery(name, mode) {
         
           SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } # binds all variables (Q numbers) to an English Language Label
       }
-      LIMIT 200
     `;
   }
 }

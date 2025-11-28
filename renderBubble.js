@@ -111,6 +111,7 @@ function renderBubble(results) {
     });
 
   // Click handler: build or update a table listing proteins related to the clicked process
+  //event is useful because it creates the click event, without it the table wuldn t appear at click action
   circles.on("click", function(event, d) {
     const related = results.filter(r => (r.biological_processLabel ? r.biological_processLabel.value : "Unknown Process") === d.data.label);
     let bubbleTable = document.getElementById("bubbleTable");

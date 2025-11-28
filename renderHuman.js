@@ -20,7 +20,6 @@ async function renderHuman(results, deps = {}) {
 
           SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }        # binds all variables (Q numbers) to an English Language Label
       }
-      LIMIT 1000
     `;
 
     // Define all organ queries
@@ -50,7 +49,6 @@ async function renderHuman(results, deps = {}) {
 
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }      # binds all variables (Q numbers) to an English Language Label
       }
-      LIMIT 1000
     `;
 
     // Clean up any existing global click handler before creating/reusing chartDiv
