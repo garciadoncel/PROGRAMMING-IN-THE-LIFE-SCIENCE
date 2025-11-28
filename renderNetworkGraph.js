@@ -93,6 +93,7 @@ function renderNetworkGraph(results, searchType = null) {
     // Only show labels for the 'highlighted' node type to reduce clutter
     .style("display", d => {
         if (searchType === "process") {
+          //the ? is an if else: if the d.type is equal to process then show block else none
             return d.type === "process" ? "block" : "none";
         } else {
             return d.type === "protein" ? "block" : "none";
