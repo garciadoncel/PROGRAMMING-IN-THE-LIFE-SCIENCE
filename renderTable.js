@@ -39,8 +39,6 @@ function renderTable(results) {
     // Add the completed row to the table body
     tbody.appendChild(tr);
   });
-  // Store the table HTML content for potential future use or export
-  window.lastTableHTML = tbody.innerHTML;
 }
 
 

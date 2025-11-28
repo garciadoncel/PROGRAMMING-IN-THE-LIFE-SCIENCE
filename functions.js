@@ -68,7 +68,6 @@ const main_query = `
 
 // Function to fetch data from Wikidata and populate the table
 // 'isSearch' indicates whether this is a search for a single protein
-// 'proteinName' is used for display at the top of search results
 async function fetchData(query, isSearch = false) {
   showThrobber(); // Show throbber while loading
 
@@ -181,6 +180,10 @@ function createProteinSearchQuery(name, mode) {
 
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }  # binds all variables (Q numbers) to an English Language Label
       }
+<<<<<<< HEAD
+=======
+      LIMIT 200
+>>>>>>> origin/main
     `;
   } else if (mode === "process") {
     return `
