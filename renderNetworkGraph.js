@@ -42,7 +42,7 @@ function renderNetworkGraph(results, searchType = null) {
     .attr("height", height) // overall svg height
     .style("background", "#fcfcfcff"); // background color; set to 'none' for transparent
 
-  const g = svg.append("g"); // group that will be transformed by zoom/pan
+  const g = svg.append("g"); // group that will be transformed by zoom/pan.                              #this is the main container for the graph elements as well as the standard for d3 zoom/pan behavior
 
   // Links: visual representation of relationships
   const link = g.append("g")

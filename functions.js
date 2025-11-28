@@ -68,7 +68,6 @@ const main_query = `
 
 // Function to fetch data from Wikidata and populate the table
 // 'isSearch' indicates whether this is a search for a single protein
-// 'proteinName' is used for display at the top of search results
 async function fetchData(query, isSearch = false) {
   showThrobber(); // Show throbber while loading
 
