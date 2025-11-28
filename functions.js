@@ -180,7 +180,7 @@ function createProteinSearchQuery(name, mode) {
 
         SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }  # binds all variables (Q numbers) to an English Language Label
       }
-      LIMIT 50
+      LIMIT 200
     `;
   } else if (mode === "process") {
     return `
