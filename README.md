@@ -15,11 +15,11 @@ A **search bar** allows queries by protein name, protein ID or biological proces
 2. Find a button labelled "code" that will the allow you to download the repository as a ZIP file.
 2. Download the repository as a ZIP file.
 3. Extract the folder from this ZIP file, and find the "webpage.html".
-4. Open "Index2.html" on any browser to access the web page.
+4. Open "webpage.html" on any browser to access the web page.
 
 ## Purpose and utility of each file:
 
-1. # index2.html
+1. # webpage.html
 
 This is the main entry point of the web page. It defines the layout of the page, including the control bar, display mode selector, query buttons, and the results table. It also loads the D3 library and all JavaScript modules that power the different interactive visualizations.
 
