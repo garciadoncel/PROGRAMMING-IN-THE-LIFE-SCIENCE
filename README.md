@@ -14,7 +14,7 @@ A **search bar** allows queries by protein name, protein ID or biological proces
 1. Go to the home page, to the main branch of the repository.
 2. Find a button labelled "code" that will the allow you to download the repository as a ZIP file.
 2. Download the repository as a ZIP file.
-3. Extract the folder from this ZIP file, and find the "Index2.html".
+3. Extract the folder from this ZIP file, and find the "webpage.html".
 4. Open "Index2.html" on any browser to access the web page.
 
 ## Purpose and utility of each file:
